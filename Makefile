@@ -7,9 +7,12 @@ COMPILER=nasm
 
 
 # --- targets
-all: carmichael
+all: carmichael game
 carmichael: carmichael.asm
 	$(COMPILER) carmichael.asm -o carmichael.com
+
+game: game.asm
+	$(COMPILER) game.asm -o game.com
 
 # --- remove binary and executable files
 clean:
