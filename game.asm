@@ -2,13 +2,13 @@
 org 100h
 
 call get_rand
-mov bl, al
+mov bl, al; the random number selected
 mov bh, 0
 ; XXX: remove display of number
 ; call print_num
 ; call print_CRLF
 
-xor cx, cx
+xor cx, cx; try counter
 call print_opening_msg
 LOOP_START:
 	call print_gess_msg
@@ -39,20 +39,18 @@ readNum:
 	push bx
 	call readKey
 	sub al, '0'
-	call print_num
 	mov bl, 10
 	mul bl
 	mov bl, al
 	call readKey
 	sub al, '0'
-	call print_num
 	add al, bl
 	pop bx
 	ret
 
 readKey:
-	mov ah, 0
-	int 0x16
+	mov ah, 0x01
+	int 0x21
 	ret
 
 print_opening_msg:
