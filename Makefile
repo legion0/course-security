@@ -16,4 +16,4 @@ game: game.asm
 
 # --- remove binary and executable files
 clean:
-	rm -f carmichael.com
+	rm -f carmichael.com game.com
