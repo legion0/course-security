@@ -1,19 +1,20 @@
-# Makefile to build monte_pi_sprng program
-# --- macros
 COMPILER=nasm
+LINKER=gcc
 # CFLAGS=  -O3 -I /usr/local/lib/sprng/include -I /usr/local/lib/pgplot -g
 # OBJECTS= monte_pi_sprng.o plot.o
 # LIBS = -L/usr/local/lib/sprng/lib -llcg -L/usr/local/lib/pgplot -lcpgplot -lpgplot -lX11 -lftn -lm
 
+TARGETS = carmichael.com game.com login.exe messagebox.exe
 
-# --- targets
-all: carmichael game
-carmichael: carmichael.asm
-	$(COMPILER) carmichael.asm -o carmichael.com
+all: $(TARGETS)
 
-game: game.asm
-	$(COMPILER) game.asm -o game.com
+%.com: %.asm
+	$(COMPILER) $< -o $@
 
-# --- remove binary and executable files
+%.exe: %.obj
+	$(LINKER) $< -o $@
+%.obj : %.asm
+	$(COMPILER) -f win32 $<
+
 clean:
-	rm -f carmichael.com game.com
+	rm -f $(TARGETS)
