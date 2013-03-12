@@ -4,6 +4,7 @@ LINKER=gcc
 # OBJECTS= monte_pi_sprng.o plot.o
 # LIBS = -L/usr/local/lib/sprng/lib -llcg -L/usr/local/lib/pgplot -lcpgplot -lpgplot -lX11 -lftn -lm
 
+SOURCES = carmichael.asm game.asm login.asm messagebox.asm
 TARGETS = carmichael.com game.com login.exe messagebox.exe
 
 all: $(TARGETS)
@@ -15,6 +16,9 @@ all: $(TARGETS)
 	$(LINKER) $< -o $@
 %.obj : %.asm
 	$(COMPILER) -f win32 $<
+
+tar: $(SOURCES) README
+	tar -cvf ex1.tar $(SOURCES) README
 
 clean:
 	rm -f $(TARGETS)

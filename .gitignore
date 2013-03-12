@@ -1,3 +1,5 @@
 *.com
 *.exe
+*.tar
+presubmit.py
 
