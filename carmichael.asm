@@ -1,71 +1,4 @@
-;org 100h for com files/
 org 100h
-;params for calc_mod
-;mov ax, 7
-;mov bx, 9
-;call calc_mod
-;call print_digit
-
-mov ax , 561
-call is_carmichael
-call print_digit
-
-mov ax , 1105
-call is_carmichael
-call print_digit
-
-mov ax , 2821
-call is_carmichael
-call print_digit
-
-mov ax , 8911
-call is_carmichael
-call print_digit
-
-mov ax , 7
-call is_carmichael
-call print_digit
-
-mov ax , 10
-call is_carmichael
-call print_digit
-
-mov ax , 282
-call is_carmichael
-call print_digit
-
-mov ax , 7531
-call is_carmichael
-call print_digit
-
-;exit with al as return code.
-mov al,0
-mov ah,4Ch
-int 21h
-
-print_digit:
-	pusha
-	add ax, '0'
-	mov [msg], al
-	mov dx,msg
-	mov ah,9
-	int 21h
-	popa
-	ret
-	msg db ' ',0dh, 0ah,'$'
-
-; is_carmichael
-; if (a is prime )
-	; return false
-; for (i = 1; i <= a; i++)
-	; if (i is prime)*
-		; if (a % i == 0)
-			; if (a/i % i == 0)
-				; return false
-			; if ((a - 1) % (p-1) != 0)
-				; return false
-; return true
-
 
 is_carmichael:
 	; cx is the counter and I, dx is the original input.
@@ -80,11 +13,21 @@ is_carmichael:
 	
 	mov dx, ax ; set dx = ax. well need ax as function input. and the loop counter
 
-	mov cx, 0
+	mov cx, 1
 	is_carmichael_loop:
 		inc cx
+		
+		;check only up to a/2
+		push dx 	
+		mov bx, 2
+		mov ax, cx
+		mul bx
+		jo is_carmichael_end
+		pop dx
+		cmp ax, dx ;(ax = i*2)
+		jg is_carmichael_end
 		cmp cx, dx
-		je is_carmichael_end ;ret true??
+		je is_carmichael_end ;ret true
 		
 		mov ax, cx
 		call is_prime
@@ -98,16 +41,17 @@ is_carmichael:
 			jne is_carmichael_loop ;if (a % i == 0)
 				
 				push dx
-				mov ax ,dx
-				xor dx, dx
-				div cx ; AX = DX:AX / CX
+				mov ax, cx
+				mul cx
+				jo is_carmichael_overflow ;if p^2 overflows, it cant devide a.
+				mov bx,ax
 				pop dx
-				
-				mov bx , cx ;possibly redundant
+				mov ax, dx
 				call calc_mod
 				cmp ax, 0
-				je is_carmichael_false ; if (a/i % i == 0) ret false
+				je is_carmichael_false ; if (a % p^2 == 0) ret false
 					
+					is_carmichael_overflow:
 					mov ax, dx
 					mov bx, cx
 					dec ax
@@ -170,4 +114,4 @@ is_prime:
 		pop cx
 		pop bx
 		mov ax, 0
-	ret
+	ret 
