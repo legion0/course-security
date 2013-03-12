@@ -4,7 +4,6 @@ org 100h
 call get_rand
 mov bl, al; the random number selected
 mov bh, 0
-; XXX: remove display of number
 ; call print_num
 ; call print_CRLF
 
