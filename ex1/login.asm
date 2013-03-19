@@ -4,7 +4,7 @@ extern _fread
 extern _fclose
 extern _printf
 
-SECTION .data	 	 
+SECTION .data
 readMode db "r", 0x00
 filePath: db	"login.txt", 0x00
 loginTxt db "00000000", 0x00
@@ -19,10 +19,10 @@ failedReadErr dd 2
 mismatchMsg db "No match.", 0x0D, 0x0A, 0x00
 mismatchErr dd 3
 
-SECTION .text	 	 
-global _main	 	 
+SECTION .text
+global _main
 _main:
-	push ebp		 
+	push ebp
 	mov ebp,esp
 
 	; open file
