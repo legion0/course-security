@@ -15,7 +15,46 @@ q3.bin
 
 Answers to Exercise Questions
 -----------------------------
-
+1.	0x004011A0
+2.	0x00401150 int get_file_size(FILE *)
+		Args: the file pointer from which to get the size.
+		Return: The size of the file.
+	0x00401000 int process_file(FILE *, size_t)
+		Args: The file pointer to read and process and the size of that file.
+		Converts uppercase letters to lowercase letters.
+		Adds 2 to letters (that are now lowercase).
+		Converts '{' to '['.
+		Return: none.
+3.	int sub_process_file(FILE* filePtr, size_t fileSize) {
+		char buffer[256];
+		int i = 0;
+		memset(buffer, 0, 256);
+		printf("Processing...\n");
+		fread(buffer, 1, fileSize, filePtr);
+		for (; i != 256 && i != 0xDEADBEEF; i++) {
+			if ('A' <= buffer[i] && buffer[i] <= 'Z') {
+				buffer[i] = buffer[i] - ('a'-'A'); // to lowercase
+			}
+			if ('a' <= buffer[i] && buffer[i] <= 'z') {
+				buffer[i] = buffer[i] + 2;
+				if (buffer[i] <= 'z')
+					continue;
+				buffer[i] = buffer[i] - 26; // if > z make < z
+			} else {
+				if (buffer[i] == '{')
+					buffer[i] = '[';
+			}
+		}
+		printf("I think that the output is: %s\n", buffer);
+	}
+4.	Makes sure that there is exactly 1 arguments (the file to process) otherwise print usage message.
+	Open the file.
+	Check if the open succeeded and print success/fail message.
+	Print the file size.
+	Processe the file (with the forementioned sub_process_file).
+	Close the file.
+5.	The code allocates a buffer of 256 bytes and reads the entire file into that buffer regardless of the file size. A file larger then 256 bytes will cause the code to overflow the buffer and potentially cause arbitrary code execution.
+	Resolution: check the file size upon opening and if the file size is larger then 256 bytes print an error message and exit.
 
 Remarks
 -------
