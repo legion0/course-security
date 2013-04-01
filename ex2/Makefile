@@ -19,3 +19,5 @@ ex2.tar: $(SOURCES) README
 
 clean:
 	rm -f $(TARGETS)
+
+messagebox: messagebox.exe
