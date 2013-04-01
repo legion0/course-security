@@ -2,4 +2,8 @@
 *.exe
 *.tar
 presubmit.py
-
+# temp ida files
+*.til
+*.nam
+*.id0
+*.id1
