@@ -1,0 +1,41 @@
+legion, 303756175, phenixdoc@gmail.com
+bg1987, 306224403, bg1987@gmail.com
+
+===========
+Exercise 3
+===========
+
+Submitted Files
+---------------
+README - This file.
+
+
+Answers to Exercise Questions
+-----------------------------
+Q1: I first looked at functions with the word "time" in them, and found DoTimer() (0x01002fe0), 
+I changed the jz short locret_1003007 to  jmp     short locret_1003007 so the function wont do anything.
+The timer then still jumped to 1, so I looked for inc _cSec, and found it at 0x0100382A, and changed the inc and the call to PlayTune to NOPS.
+Q2: I found the SetTimer command in the documentation, found it in the code (0x0100384F) and changed the timeout param from 1000ms to 500ms.(0x0100383D)
+Q3:
+changed where the timer is increased to decrease instead.(0x01002FF5 DoTimer ,0x01003830 ButtonDown)
+
+before these DEC calls there were checks to compare the timer to 0 and 999 (0 in ButtonDown to initiate the timer 0x01003821, and 999 in DoTimer to stop counting 0x01002FE9)
+these were changed to jumps to my new code (ButtonDown jumps to 0x01004a60, DoTimer jumps to 0x01004A7F) which is explained below.
+
+01004A60      833D 9C570001 00      CMP DWORD PTR DS:[100579C],0             ; from ButtonDown if timer is 0 (game hasnt started) set the timer to 121 (will be decreased by 1 and displayed as 120)
+01004A67      75 11                 JNE SHORT 01004A7A
+01004A69      C705 9C570001 7900000 MOV DWORD PTR DS:[100579C],79            ; set _cSec to 121
+01004A73      833D 9C570001 79      CMP DWORD PTR DS:[100579C],79            ; compare to 121 so the jump wont be taken
+01004A7A    ^ E9 A7EDFFFF           JMP 01003826                             ; go back to the ButtonDown
+01004A7F      833D 9C570001 00      CMP DWORD PTR DS:[100579C],0             ; from DoTimer (if timer reaches 0, call GameOver(False), otherwise, return normaly)
+01004A86      75 13                 JNE SHORT 01004A9B                       ; if not 0 jump
+01004A88      6A 00                 PUSH 0                                   ; false - if timer = 0 call GameOver(False) = Loss
+01004A8A      E8 EDE9FFFF           CALL 0100347C                            ; GameOver(false) = loss
+01004A8F      833D 9C570001 00      CMP DWORD PTR DS:[100579C],0             ; Compare _cSec to 0 and reutrn to DoTimer for normal flow
+01004A96    ^ E9 56E5FFFF           JMP 01002FF1
+01004A9B    ^ E9 55E5FFFF           JMP 01002FF5                             ; jump to the Decrease Timer
+
+
+
+Remarks
+-------
