@@ -27,7 +27,25 @@
 
 #define BUFFER_SIZE 0x680
 
+#define MSG_WM_LBUTTONUP 0x0202
+#define MSG_WM_LBUTTONDOWN 0x0201
+#define MOUSE_BASE_X 19
+#define MOUSE_BASE_Y 63
+#define MOUSE_SQUARE_SIZE 16
+
+#define UNREVEALED_EMPTY 0x0F
+#define UNREVEALED_EMPTY_CHAR '.'
+
+#define EXEPTION_FIND_WINDOW -1
+#define EXEPTION_OPEN_PROCESS -2
+#define EXEPTION_READ_PROCESS_MEMORY -3
+#define EXEPTION_BAD_STATE -4
+#define EXEPTION_VERY_BAD_STATE -5
+
 char byteToPrettyChar(byte);
+void clickOrDie(HWND, int, int);
+void die(char*, int);
+void die(char*);
 
 class MineMap {
 	private:
@@ -41,25 +59,76 @@ class MineMap {
 		~MineMap() {
 			if (_map != NULL) {
 				for (int i = 0; i < _width; i++) {
-					delete _map[i];
+					delete[] _map[i];
 				}
-				delete _map;
+				delete[] _map;
 			}
 		};
 };
 
 int main(int argc, char **argv) {
-	MineMap map;
-	for (int i = 0; i < map.width(); i++) {
-		for (int j = 0; j < map.height(); j++) {
+	HWND windowHandle = FindWindow(NULL, WIN_NAME);
+	if (windowHandle == NULL) {
+		std::string msg = "ERROR: Cannot Find ";
+		msg += WIN_NAME;
+		msg += " window.";
+		die((char*)msg.c_str());
+	}
+	MineMap* mapPtr = NULL;
+	try {
+		mapPtr = new MineMap();
+	} catch (int e) {
+		if (e == EXEPTION_BAD_STATE) {
+			clickOrDie(windowHandle, 0, 0);
+			try {
+				mapPtr = new MineMap();
+			} catch (int e) {
+				die("ERROR: Failed to init or unknown state.");
+			}
+		} else {
+			die("ERROR: Failed to init or unknown state.");
+		}
+	}
+	MineMap map = *mapPtr;
+	for (int j = 0; j < map.height(); j++) {
+		for (int i = 0; i < map.width(); i++) {
 			printf("%c ", byteToPrettyChar(map.getByte(i,j)));
 		}
 		printf("\n");
 	}
+	for (int i = 0; i < map.width(); i++) {
+		for (int j = 0; j < map.height(); j++) {
+			if (UNREVEALED_EMPTY == map.getByte(i,j)) {
+				clickOrDie(windowHandle, i, j);
+			}
+		}
+	}
+	printf("Pwned !\n");
 };
 
+void clickOrDie(HWND windowHandle, int x, int y) {
+	LRESULT retVal = SendMessage(windowHandle, MSG_WM_LBUTTONDOWN,
+		0,
+		((MOUSE_BASE_Y + y * MOUSE_SQUARE_SIZE) << 16) + (MOUSE_BASE_X + x * MOUSE_SQUARE_SIZE)
+	);
+	if (retVal != 0) {
+		die("Failed to click down :(");
+	}
+	retVal = SendMessage(windowHandle, MSG_WM_LBUTTONUP,
+		0,
+		((MOUSE_BASE_Y + y * MOUSE_SQUARE_SIZE) << 16) + (MOUSE_BASE_X + x * MOUSE_SQUARE_SIZE)
+	);
+	if (retVal != 0) {
+		die("Failed to click up :(");
+	}
+}
+
 void die(char * arg, int retVal) {
-	printf(arg);
+	if (retVal != 0) {
+		std::cerr << arg << std::endl;
+	} else {
+		std::cout << arg << std::endl;
+	}
 	exit(retVal);
 };
 void die(char * arg) {
@@ -83,8 +152,8 @@ char byteToPrettyChar(byte b) {
 		return '0'+(b-0x40);
 	}
 	switch (b) {
-		case 0x0F:
-			return '.'; // unrevealed empty
+		case UNREVEALED_EMPTY:
+			return UNREVEALED_EMPTY_CHAR; // unrevealed empty
 		case 0x8F:
 			return '*'; // unrevealed mine
 		case 0x0D:
@@ -105,27 +174,28 @@ MineMap::MineMap () {
 	_map = NULL;
 	HWND windowHandle = FindWindow(NULL, WIN_NAME);
 	if (windowHandle == NULL) {
-		die("XXX: FU FindWindow\n");
+		throw EXEPTION_FIND_WINDOW;
 	}
 	DWORD processID;
 	GetWindowThreadProcessId(windowHandle, &processID); // I Can't Fail :)
 	HANDLE phandle = OpenProcess(PROCESS_VM_READ, FALSE, processID);
 	if(phandle == NULL) {
-		die("XXX: FU OpenProcess\n");
+		throw EXEPTION_OPEN_PROCESS;
 	}
 	byte buffer[BUFFER_SIZE];
 	SIZE_T bytesRead = 0;
 	int retVal = ReadProcessMemory(phandle, (LPCVOID) BASE_ADDRESS, (void*)&buffer, BUFFER_SIZE, &bytesRead);
 	if (retVal == 0) {
 		CloseHandle(phandle);
-		die("XXX: FU ReadProcessMemory\n");
+		throw EXEPTION_READ_PROCESS_MEMORY;
 	}
-	// for (int i = 0; i < 10; i++) {
-		// printf("%d:\t%u\n", i, buffer[i]);
-	// }
+	if (buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_OFF) {
+		CloseHandle(phandle);
+		throw EXEPTION_BAD_STATE;
+	}
 	if (!(buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_ON)) {
 		CloseHandle(phandle);
-		die("XXX: FU BAD STATE\n");
+		throw EXEPTION_VERY_BAD_STATE;
 	}
 	_width = buffer[WIDTH_OFFSET];
 	_height = buffer[HEIGHT_OFFSET];
