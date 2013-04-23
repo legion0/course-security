@@ -5,6 +5,8 @@
 
 #include <TlHelp32.h>
 
+#include "trainer.h"
+
 #define PROC_NAME "winmine.exe"
 #define WIN_NAME "Minesweeper"
 #define BASE_ADDRESS 0x1005000
@@ -33,40 +35,47 @@
 #define MOUSE_BASE_Y 63
 #define MOUSE_SQUARE_SIZE 16
 
-#define UNREVEALED_EMPTY 0x0F
-#define UNREVEALED_EMPTY_CHAR '.'
-
 #define EXEPTION_FIND_WINDOW -1
 #define EXEPTION_OPEN_PROCESS -2
 #define EXEPTION_READ_PROCESS_MEMORY -3
-#define EXEPTION_BAD_STATE -4
+#define EXEPTION_NON_READY_STATE -4
 #define EXEPTION_VERY_BAD_STATE -5
 
-char byteToPrettyChar(byte);
-void clickOrDie(HWND, int, int);
-void die(char*, int);
-void die(char*);
+#define SYM_UNREVEALED_EMPTY 0x0F
+#define SYM_UNREVEALED_EMPTY_CHAR '.'
+#define SYM_UNREVEALED_MINE 0x8F
+#define SYM_UNREVEALED_MINE_CHAR '*'
+#define SYM_QUESTION_MARK 0x0D
+#define SYM_QUESTION_MARK_CHAR '?'
+#define SYM_FLAG 0x0E
+#define SYM_FLAG_CHAR 'F'
+#define SYM_REVEALED_MINE 0x8A
+#define SYM_REVEALED_MINE_CHAR 'M'
+#define SYM_TRIGGERED_MINE 0xCC
+#define SYM_TRIGGERED_MINE_CHAR 'D'
+#define SYM_WRONG_FLAG 0x0B
+#define SYM_WRONG_FLAG_CHAR 'E'
+#define SYM_OTHER_CHAR '#'
+#define SYM_NUM_0 0x40
+#define SYM_NUM_8 0x48
 
-class MineMap {
-	private:
-		int _width, _height, _count;
-		byte ** _map;
-	public:
-		MineMap();
-		byte getByte(int, int);
-		int width();
-		int height();
-		~MineMap() {
-			if (_map != NULL) {
-				for (int i = 0; i < _width; i++) {
-					delete[] _map[i];
-				}
-				delete[] _map;
-			}
-		};
-};
+#define ARG_HINT_STR "-v"
+#define ARG_CHEAT_STR "-s"
+#define USAGE_MSG "Usage: trainer.exe –[v|s]"
+
+#define WAIT_MILIS 50
 
 int main(int argc, char **argv) {
+	int doHint = 0, doCheat = 0;
+	if (argc == 1 || argc > 2 || ( strncmp(ARG_HINT_STR, argv[1], 3) != 0 && strncmp(ARG_CHEAT_STR, argv[1], 3) != 0)) {
+		die(USAGE_MSG);
+	}
+	if (strncmp(ARG_HINT_STR, argv[1], 3) == 0) {
+		doHint = 1;
+	}
+	if (strncmp(ARG_CHEAT_STR, argv[1], 3) == 0) {
+		doCheat = 1;
+	}
 	HWND windowHandle = FindWindow(NULL, WIN_NAME);
 	if (windowHandle == NULL) {
 		std::string msg = "ERROR: Cannot Find ";
@@ -78,32 +87,48 @@ int main(int argc, char **argv) {
 	try {
 		mapPtr = new MineMap();
 	} catch (int e) {
-		if (e == EXEPTION_BAD_STATE) {
-			clickOrDie(windowHandle, 0, 0);
-			try {
-				mapPtr = new MineMap();
-			} catch (int e) {
-				die("ERROR: Failed to init or unknown state.");
+		die("ERROR: Failed to init or unknown state.");
+	}
+	if (doHint) {
+		for (int j = 0; j < mapPtr->height(); j++) {
+			for (int i = 0; i < mapPtr->width(); i++) {
+				printf("%c ", byteToPrettyChar(mapPtr->getByte(i,j)));
 			}
-		} else {
-			die("ERROR: Failed to init or unknown state.");
+			printf("\n");
 		}
 	}
-	MineMap map = *mapPtr;
-	for (int j = 0; j < map.height(); j++) {
-		for (int i = 0; i < map.width(); i++) {
-			printf("%c ", byteToPrettyChar(map.getByte(i,j)));
-		}
-		printf("\n");
-	}
-	for (int i = 0; i < map.width(); i++) {
-		for (int j = 0; j < map.height(); j++) {
-			if (UNREVEALED_EMPTY == map.getByte(i,j)) {
-				clickOrDie(windowHandle, i, j);
+	if (doCheat) {
+		int solved = 0, clicked;
+		while(!solved) {
+			clicked = 0;
+			for (int i = mapPtr->width()-1; i >= 0; i--) {
+				for (int j = mapPtr->height()-1; j >= 0; j--) {
+					if (SYM_UNREVEALED_EMPTY == mapPtr->getByte(i,j)) {
+						clickOrDie(windowHandle, i, j);
+						usleep(1000 * WAIT_MILIS);
+						clicked = 1;
+						break;
+					}
+				}
+				if (clicked) {
+					break;
+				}
+			}
+			if (clicked) {
+				delete mapPtr;
+				try {
+					mapPtr = new MineMap();
+				} catch (int e) {
+					mapPtr = NULL;
+					solved = 1;
+				}
 			}
 		}
 	}
-	printf("Pwned !\n");
+	if (mapPtr != NULL) {
+		delete mapPtr;
+	}
+	return 0;
 };
 
 void clickOrDie(HWND windowHandle, int x, int y) {
@@ -135,39 +160,27 @@ void die(char * arg) {
 	die(arg, -1);
 };
 
-byte MineMap::getByte(int x, int y) {
-	return _map[x][y];
-}
-
-int MineMap::width() {
-	return _width;
-}
-
-int MineMap::height() {
-	return _height;
-}
-
 char byteToPrettyChar(byte b) {
-	if (0x40 <= b && b <= 0x48) {
-		return '0'+(b-0x40);
+	if (SYM_NUM_0 <= b && b <= SYM_NUM_8) {
+		return '0'+(b-SYM_NUM_0);
 	}
 	switch (b) {
-		case UNREVEALED_EMPTY:
-			return UNREVEALED_EMPTY_CHAR; // unrevealed empty
-		case 0x8F:
-			return '*'; // unrevealed mine
-		case 0x0D:
-			return '?'; // question mark
-		case 0x0E:
-			return 'F'; // flag
-		case 0x8A:
-			return 'M'; // revealed mine
-		case 0xCC:
-			return 'D'; // triggered mine
-		case 0x0B:
-			return 'E'; // wrong flag (flag over non mine)
+		case SYM_UNREVEALED_EMPTY:
+			return SYM_UNREVEALED_EMPTY_CHAR;
+		case SYM_UNREVEALED_MINE:
+			return SYM_UNREVEALED_MINE_CHAR;
+		case SYM_QUESTION_MARK:
+			return SYM_QUESTION_MARK_CHAR;
+		case SYM_FLAG:
+			return SYM_FLAG_CHAR;
+		case SYM_REVEALED_MINE:
+			return SYM_REVEALED_MINE_CHAR;
+		case SYM_TRIGGERED_MINE:
+			return SYM_TRIGGERED_MINE_CHAR;
+		case SYM_WRONG_FLAG:
+			return SYM_WRONG_FLAG_CHAR;
 	}
-	return '#';
+	return SYM_OTHER_CHAR;
 }
 
 MineMap::MineMap () {
@@ -190,10 +203,9 @@ MineMap::MineMap () {
 		throw EXEPTION_READ_PROCESS_MEMORY;
 	}
 	if (buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_OFF) {
-		CloseHandle(phandle);
-		throw EXEPTION_BAD_STATE;
-	}
-	if (!(buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_ON)) {
+		// CloseHandle(phandle);
+		// throw EXEPTION_NON_READY_STATE;
+	} else if (!(buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_ON)) {
 		CloseHandle(phandle);
 		throw EXEPTION_VERY_BAD_STATE;
 	}
@@ -210,4 +222,25 @@ MineMap::MineMap () {
 		}
 	}
 	CloseHandle(phandle);
+};
+
+int MineMap::width() {
+	return _width;
+};
+
+int MineMap::height() {
+	return _height;
+};
+
+byte MineMap::getByte(int x, int y) {
+	return _map[x][y];
+};
+
+MineMap::~MineMap() {
+	if (_map != NULL) {
+		for (int i = 0; i < _width; i++) {
+			delete[] _map[i];
+		}
+		delete[] _map;
+	}
 };
