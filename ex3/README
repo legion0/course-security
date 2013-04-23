@@ -12,7 +12,7 @@ README - This file.
 
 Answers to Exercise Questions
 -----------------------------
-Q1: I first looked at functions with the word "time" in them, and found DoTimer() (0x01002fe0), 
+Q1: I first looked at functions with the word "time" in them, and found DoTimer() (0x01002fe0),
 I changed the jz short locret_1003007 to  jmp     short locret_1003007 so the function wont do anything.
 The timer then still jumped to 1, so I looked for inc _cSec, and found it at 0x0100382A, and changed the inc and the call to PlayTune to NOPS.
 Q2: I found the SetTimer command in the documentation, found it in the code (0x0100384F) and changed the timeout param from 1000ms to 500ms.(0x0100383D)
@@ -35,6 +35,50 @@ these were changed to jumps to my new code (ButtonDown jumps to 0x01004a60, DoTi
 01004A96    ^ E9 56E5FFFF           JMP 01002FF1
 01004A9B    ^ E9 55E5FFFF           JMP 01002FF5                             ; jump to the Decrease Timer
 
+Q4: HKCU\Software\Microsoft\winmine
+	Name1 & Time1 for Beginner
+	Name1 & Time1 for Intermediate
+	Name3 & Time3 for Expert
+
+	0x01002DAB: WritePreferences()
+
+Q5: 0x1005330 Number of mines on the board.
+	0x1005334 width of the board.
+	0x1005338 Height of the board.
+	0x1005340 + 0x20 * (y+1) + (x+1) for cell x,y where x,y are 0 based (the +1 is due to the representation x,y being 1 based).
+
+To find the representation we first looked at the stack in olly but didn't see anything interesting there.
+We then looked at the data section in IDA and seen:
+.data:01005334 _xBoxMac        dd ?                    ; DATA XREF: AdjustWindow
+.data:01005334                                         ; MainWndProc
+.data:01005338 _yBoxMac        dd ?                    ; DATA XREF: AdjustWindow
+.data:01005338                                         ; MainWndProc
+.data:0100533C                 align 10h
+.data:01005340 _rgBlk          dd ?                    ; DATA XREF: MainWndProc
+.data:01005340                                         ; DisplayBlk
+.data:01005344                 db    ? ;
+...
+.data:01005360 dword_1005360   dd ?                    ; DATA XREF: DrawGrid
+.data:01005360                                         ; ClearField
+Where the `dword_1005360` was a really big block of memory that was used in `DrawGrid`
+
+Inside `DrawGrid` we found:
+.text:010026B0                 cmp     _yBoxMac, eax
+.text:010026CC                 cmp     _xBoxMac, esi
+.text:010026EC                 push    _MemBlkDc[eax*4] ; HDC
+.text:01002700                 call    ds:__imp__BitBlt@36 ; BitBlt(x,x,x,x,x,x,x,x,x)
+Which seemed to suggest this was the board representation.
+We then ran olly again and looked at this area in memory and noticed that it changed as we changed the board, from there it was a matter of iterpreting the representation bytes and the cooridate system.
+
+The symbols:
+0x0F	UNREVEALED_EMPTY
+0x8F	UNREVEALED_MINE
+0x0D	QUESTION_MARK
+0x0E	FLAG
+0x8A	REVEALED_MINE
+0xCC	TRIGGERED_MINE
+0x0B	WRONG_FLAG
+0x40+d	square with d wrotten on it.
 
 
 Remarks
