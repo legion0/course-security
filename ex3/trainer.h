@@ -8,13 +8,14 @@ void die(char*);
 
 class MineMap {
 	private:
-		int _width, _height, _count;
+		int _width, _height, _count, _state;
 		byte ** _map;
 	public:
 		MineMap();
 		int width();
 		int height();
 		byte getByte(int, int);
+		int state();
 		~MineMap();
 };
 

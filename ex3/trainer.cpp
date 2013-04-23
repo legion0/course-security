@@ -11,7 +11,7 @@
 #define WIN_NAME "Minesweeper"
 #define BASE_ADDRESS 0x1005000
 #define STATE_OFFSET 0x0
-#define STATE_GAMEOVER 10
+#define STATE_GAMEOVER 0x10
 #define STATE_RUNNING 1
 #define TIMER_STATE_OFFSET 0x164
 #define TIMER_STATE_OFF 0
@@ -38,19 +38,22 @@
 #define EXEPTION_FIND_WINDOW -1
 #define EXEPTION_OPEN_PROCESS -2
 #define EXEPTION_READ_PROCESS_MEMORY -3
-#define EXEPTION_NON_READY_STATE -4
 #define EXEPTION_VERY_BAD_STATE -5
 
 #define SYM_UNREVEALED_EMPTY 0x0F
 #define SYM_UNREVEALED_EMPTY_CHAR '.'
+#define SYM_REVEALED_MINE 0x8A
+#define SYM_REVEALED_MINE_CHAR 'M'
+#define SYM_UNREVEALED_MINE_QUESTION 0x8D
+#define SYM_UNREVEALED_MINE_QUESTION_CHAR '!'
+#define SYM_UNREVEALED_MINE_FLAG 0x8E
+#define SYM_UNREVEALED_MINE_FLAG_CHAR '$'
 #define SYM_UNREVEALED_MINE 0x8F
 #define SYM_UNREVEALED_MINE_CHAR '*'
 #define SYM_QUESTION_MARK 0x0D
 #define SYM_QUESTION_MARK_CHAR '?'
 #define SYM_FLAG 0x0E
 #define SYM_FLAG_CHAR 'F'
-#define SYM_REVEALED_MINE 0x8A
-#define SYM_REVEALED_MINE_CHAR 'M'
 #define SYM_TRIGGERED_MINE 0xCC
 #define SYM_TRIGGERED_MINE_CHAR 'D'
 #define SYM_WRONG_FLAG 0x0B
@@ -64,6 +67,10 @@
 #define USAGE_MSG "Usage: trainer.exe –[v|s]"
 
 #define WAIT_MILIS 50
+
+#define STATE_GAME_CLEAN 0
+#define STATE_GAME_PLAYING 1
+#define STATE_GAME_OVER 3
 
 int main(int argc, char **argv) {
 	int doHint = 0, doCheat = 0;
@@ -87,7 +94,7 @@ int main(int argc, char **argv) {
 	try {
 		mapPtr = new MineMap();
 	} catch (int e) {
-		die("ERROR: Failed to init or unknown state.");
+		die("ERROR: Failed to init.");
 	}
 	if (doHint) {
 		for (int j = 0; j < mapPtr->height(); j++) {
@@ -99,6 +106,9 @@ int main(int argc, char **argv) {
 	}
 	if (doCheat) {
 		int solved = 0, clicked;
+		if (mapPtr->state() == STATE_GAME_CLEAN) {
+			clickOrDie(windowHandle, mapPtr->width()-1, mapPtr->height()-1);
+		}
 		while(!solved) {
 			clicked = 0;
 			for (int i = mapPtr->width()-1; i >= 0; i--) {
@@ -119,9 +129,13 @@ int main(int argc, char **argv) {
 				try {
 					mapPtr = new MineMap();
 				} catch (int e) {
-					mapPtr = NULL;
-					solved = 1;
+					die("ERROR: Failed to read board.");
 				}
+			} else {
+				break;
+			}
+			if (mapPtr != NULL && mapPtr->state() == STATE_GAME_OVER) {
+				solved = 1;
 			}
 		}
 	}
@@ -169,6 +183,10 @@ char byteToPrettyChar(byte b) {
 			return SYM_UNREVEALED_EMPTY_CHAR;
 		case SYM_UNREVEALED_MINE:
 			return SYM_UNREVEALED_MINE_CHAR;
+		case SYM_UNREVEALED_MINE_FLAG:
+			return SYM_UNREVEALED_MINE_FLAG_CHAR;
+		case SYM_UNREVEALED_MINE_QUESTION:
+			return SYM_UNREVEALED_MINE_QUESTION_CHAR;
 		case SYM_QUESTION_MARK:
 			return SYM_QUESTION_MARK_CHAR;
 		case SYM_FLAG:
@@ -203,9 +221,12 @@ MineMap::MineMap () {
 		throw EXEPTION_READ_PROCESS_MEMORY;
 	}
 	if (buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_OFF) {
-		// CloseHandle(phandle);
-		// throw EXEPTION_NON_READY_STATE;
-	} else if (!(buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_ON)) {
+		_state = STATE_GAME_CLEAN;
+	} else if (buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_ON) {
+		_state = STATE_GAME_PLAYING;
+	} else if (buffer[STATE_OFFSET] == STATE_GAMEOVER && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_OFF) {
+		_state = STATE_GAME_OVER;
+	} else {
 		CloseHandle(phandle);
 		throw EXEPTION_VERY_BAD_STATE;
 	}
@@ -234,6 +255,10 @@ int MineMap::height() {
 
 byte MineMap::getByte(int x, int y) {
 	return _map[x][y];
+};
+
+int MineMap::state() {
+	return _state;
 };
 
 MineMap::~MineMap() {
