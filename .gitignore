@@ -1,7 +1,5 @@
 *.com
-*.exe
 *.tar
-presubmit.py
 # temp ida files
 *.til
 *.nam
