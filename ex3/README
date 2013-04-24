@@ -10,12 +10,16 @@ Submitted Files
 README - This file.
 
 
+
 Answers to Exercise Questions
 -----------------------------
-Q1: I first looked at functions with the word "time" in them, and found DoTimer() (0x01002fe0),
-I changed the jz short locret_1003007 to  jmp     short locret_1003007 so the function wont do anything.
-The timer then still jumped to 1, so I looked for inc _cSec, and found it at 0x0100382A, and changed the inc and the call to PlayTune to NOPS.
-Q2: I found the SetTimer command in the documentation, found it in the code (0x0100384F) and changed the timeout param from 1000ms to 500ms.(0x0100383D)
+Part 1:
+Took 682.
+Part 2:
+Q1: We first looked at functions with the word "time" in them, and found DoTimer() (0x01002fe0),
+We changed the "jz short locret_1003007" to  "jmp     short locret_1003007" so the function wont do anything.
+The timer then still jumped to 1, so We looked for inc _cSec, and found it at 0x0100382A, and changed the inc and the call to PlayTune to NOPS.
+Q2: We found the SetTimer command in MSDN doc, then found it in the code (0x0100384F) and changed the timeout param from 1000ms to 500ms.(0x0100383D)
 Q3:
 changed where the timer is increased to decrease instead.(0x01002FF5 DoTimer ,0x01003830 ButtonDown)
 
@@ -37,7 +41,7 @@ these were changed to jumps to my new code (ButtonDown jumps to 0x01004a60, DoTi
 
 Q4: HKCU\Software\Microsoft\winmine
 	Name1 & Time1 for Beginner
-	Name1 & Time1 for Intermediate
+	Name2 & Time2 for Intermediate
 	Name3 & Time3 for Expert
 
 	0x01002DAB: WritePreferences()
@@ -45,7 +49,7 @@ Q4: HKCU\Software\Microsoft\winmine
 Q5: 0x1005330 Number of mines on the board.
 	0x1005334 width of the board.
 	0x1005338 Height of the board.
-	0x1005340 + 0x20 * (y+1) + (x+1) for cell x,y where x,y are 0 based (the +1 is due to the representation x,y being 1 based).
+	0x1005340 + 0x20 * (y+1) + (x+1) for cell x,y where x,y are 0 based (the +1 is due to the representation x,y being 1 based and ours is zero based).
 
 To find the representation we first looked at the stack in olly but didn't see anything interesting there.
 We then looked at the data section in IDA and seen:
@@ -78,8 +82,33 @@ The symbols:
 0x8A	REVEALED_MINE
 0xCC	TRIGGERED_MINE
 0x0B	WRONG_FLAG
+0x8D	UNREVEALED_MINE_QUESTION
+0x8E	UNREVEALED_MINE_FLAG
 0x40+d	square with d wrotten on it.
+0x10	this is a marker to an end of row of mine and also marks the start and end of board
 
+Q6:
+Legend:
+UNREVEALED_EMPTY_CHAR '.'
+REVEALED_MINE_CHAR 'M'
+UNREVEALED_MINE_QUESTION_CHAR '!'
+UNREVEALED_MINE_FLAG_CHAR '$'
+UNREVEALED_MINE_CHAR '*'
+QUESTION_MARK_CHAR '?'
+FLAG_CHAR 'F'
+TRIGGERED_MINE_CHAR 'D'
+WRONG_FLAG_CHAR 'E'
+Numbers The number
+if a char is found and we didnt define it, it will be shown as #
+
+Bonus:
+We knew that the orginal cheat colors a pixel according to the mine, so we looked for SetPixel in the IDB. we found a string next to it caled
+XYZZY (which was the cheat code), we looked for that, and found 3 parts that deal with it. (named in IDB as CHEAT_1 2 3)
+and the location of the text XYZZY in unicode in the data section (0x01005034) the data was changed to GOD so GOD will be matched 
+and the parts that comapre _iXYZZY counter to 5, were modified to compare to 3, so only 3 chars will be compared.
 
 Remarks
 -------
+I didnt change the cheat activation to shit+enter (lack of time). so just shift is enough.
+The trainer.c file is actually a cpp file but we changed it to .c for the presubmit script. It still should work ok in visual studio but we didn't get a chance to check that. In any case changing the extension to .cpp will work.
+

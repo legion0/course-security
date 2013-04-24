@@ -1,21 +1,17 @@
 EX=3
 COMPILER=g++
 CFLAGS=-Wall
-SOURCES = trainer.cpp
+SOURCES = trainer.c trainer.h
+EXTRAFILES = winmine_freezed.exe winmine_extreme.exe winmine_countdown.exe wackymine.exe godlymine.exe winmine.idb
 TARGETS = trainer.exe
 
 all: $(TARGETS)
 
-%.com: %.asm
-	$(COMPILER) $< -o $@
-
-trainer.exe: trainer.cpp
+trainer.exe: trainer.c trainer.h
 	$(COMPILER) $(CFLAGS) $< -o $@
 
-tar: $(SOURCES) README
+tar: $(SOURCES) $(EXTRAFILES) README
 	tar -cf ex$(EX).tar $^
 
 clean:
 	rm -f $(TARGETS)
-
-messagebox: messagebox.exe

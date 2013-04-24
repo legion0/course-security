@@ -64,7 +64,7 @@
 
 #define ARG_HINT_STR "-v"
 #define ARG_CHEAT_STR "-s"
-#define USAGE_MSG "Usage: trainer.exe –[v|s]"
+#define USAGE_MSG "Usage: trainer.exe -[v|s]"
 
 #define WAIT_MILIS 50
 
@@ -83,6 +83,7 @@ int main(int argc, char **argv) {
 	if (strncmp(ARG_CHEAT_STR, argv[1], 3) == 0) {
 		doCheat = 1;
 	}
+	//get the window handle
 	HWND windowHandle = FindWindow(NULL, WIN_NAME);
 	if (windowHandle == NULL) {
 		std::string msg = "ERROR: Cannot Find ";
@@ -93,17 +94,19 @@ int main(int argc, char **argv) {
 	MineMap* mapPtr = NULL;
 	try {
 		mapPtr = new MineMap();
-	} catch (int e) {
+	} catch (int) {
 		die("ERROR: Failed to init.");
 	}
+	//print the map
 	if (doHint) {
 		for (int j = 0; j < mapPtr->height(); j++) {
 			for (int i = 0; i < mapPtr->width(); i++) {
 				printf("%c ", byteToPrettyChar(mapPtr->getByte(i,j)));
 			}
-			printf("\n");
+			std::cout << std::endl;
 		}
 	}
+	//solve the board
 	if (doCheat) {
 		int solved = 0, clicked;
 		if (mapPtr->state() == STATE_GAME_CLEAN) {
@@ -115,7 +118,7 @@ int main(int argc, char **argv) {
 				for (int j = mapPtr->height()-1; j >= 0; j--) {
 					if (SYM_UNREVEALED_EMPTY == mapPtr->getByte(i,j)) {
 						clickOrDie(windowHandle, i, j);
-						usleep(1000 * WAIT_MILIS);
+						Sleep(WAIT_MILIS);
 						clicked = 1;
 						break;
 					}
@@ -128,7 +131,7 @@ int main(int argc, char **argv) {
 				delete mapPtr;
 				try {
 					mapPtr = new MineMap();
-				} catch (int e) {
+				} catch (int) {
 					die("ERROR: Failed to read board.");
 				}
 			} else {
@@ -145,6 +148,7 @@ int main(int argc, char **argv) {
 	return 0;
 };
 
+//send the click command to the cell at x,y
 void clickOrDie(HWND windowHandle, int x, int y) {
 	LRESULT retVal = SendMessage(windowHandle, MSG_WM_LBUTTONDOWN,
 		0,
@@ -162,6 +166,7 @@ void clickOrDie(HWND windowHandle, int x, int y) {
 	}
 }
 
+//quit the program with message.
 void die(char * arg, int retVal) {
 	if (retVal != 0) {
 		std::cerr << arg << std::endl;
@@ -174,6 +179,7 @@ void die(char * arg) {
 	die(arg, -1);
 };
 
+//convert the byte from memory to the appropriate printable char
 char byteToPrettyChar(byte b) {
 	if (SYM_NUM_0 <= b && b <= SYM_NUM_8) {
 		return '0'+(b-SYM_NUM_0);
@@ -200,7 +206,7 @@ char byteToPrettyChar(byte b) {
 	}
 	return SYM_OTHER_CHAR;
 }
-
+//class that represnts the mine map in the memory.
 MineMap::MineMap () {
 	_map = NULL;
 	HWND windowHandle = FindWindow(NULL, WIN_NAME);
@@ -220,6 +226,7 @@ MineMap::MineMap () {
 		CloseHandle(phandle);
 		throw EXEPTION_READ_PROCESS_MEMORY;
 	}
+	//check game state (running/gameover timer on/off)
 	if (buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_OFF) {
 		_state = STATE_GAME_CLEAN;
 	} else if (buffer[STATE_OFFSET] == STATE_RUNNING && buffer[TIMER_STATE_OFFSET] == TIMER_STATE_ON) {
@@ -230,16 +237,20 @@ MineMap::MineMap () {
 		CloseHandle(phandle);
 		throw EXEPTION_VERY_BAD_STATE;
 	}
+	
 	_width = buffer[WIDTH_OFFSET];
 	_height = buffer[HEIGHT_OFFSET];
 	_count = buffer[MINES_COUNT_OFFSET];
+	
+	//initiate the matix for our data
 	_map = new byte*[_width];
 	for (int i = 0; i < _width; i++) {
 		_map[i] = new byte[_height];
 	}
+	//copy memory to the local var
 	for (int i = 0; i < _width; i++) {
 		for (int j = 0; j < _height; j++) {
-			_map[i][j] = buffer[MAP_OFFSET + ROW_MAX_WIDTH*(j+1)+(i+1)]; // windows ppl are !@#$%^&*()_+
+			_map[i][j] = buffer[MAP_OFFSET + ROW_MAX_WIDTH*(j+1)+(i+1)]; //adjust for 1 based index windows ppl are !@#$%^&*()_+
 		}
 	}
 	CloseHandle(phandle);
