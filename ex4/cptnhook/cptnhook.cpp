@@ -98,6 +98,11 @@ void sendKeystroke(char c,int lp)
 		//SendMessage(handle,WM_KEYDOWN,c,1);
 		//SendMessage(handle,WM_KEYUP,c,0xC0000001);
 		//PostMessage(handle,WM_KEYDOWN,c,0);
+
+		//alternative to way to find handle:
+		//ahwnd = FindWindow("Notepad",NULL)
+		//FindWindowEx(ahwnd, NULL, "Edit", NULL)
+
 		PostMessage(handle,WM_KEYUP,c,0);
 	}
 	//1337 H4X0Rz
