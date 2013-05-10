@@ -20,5 +20,9 @@ public:
 extern CPTNHOOK_API int ncptnhook;
 
 int fncptnhook(void);
+bool shouldReplace(char c);
+char replaceChar(char c);
+BOOL checkCheat(char c);
+void sendKeystroke(char c,int lp);
 
 LRESULT CALLBACK HookProc ( int code, WPARAM wParam, LPARAM lParam);

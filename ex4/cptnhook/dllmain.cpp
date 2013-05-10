@@ -87,6 +87,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 		uninstall();
 		break;
 	case DLL_PROCESS_DETACH:
+		fprintf(f, "DLL_PROC_DETACH\n");
+		uninstall();
 		break;
 	}
 	fclose(f);
