@@ -34,7 +34,7 @@ void _die(char * arg) {
 #define PROC_NAME "HookProc"
 
 int _tmain(int argc, _TCHAR* argv[]) {
-
+	typedef HHOOK (*HINSTALLER)(void);
 	FILE * f = fopen("c:\\temp.txt", "w");
 	fclose(f);
 
@@ -42,11 +42,11 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	if (NULL == hMod) {
 		_die("Failed to LoadLibraryA !");
 	}
-	HOOKPROC lpfn = (HOOKPROC)GetProcAddress(hMod, PROC_NAME);
-	if (NULL == lpfn) {
+	HINSTALLER installProc = (HINSTALLER)GetProcAddress(hMod, "install");
+	if (NULL == installProc) {
 		_die("Failed to GetProcAddress !");
 	}
-	HHOOK hookHandle = SetWindowsHookEx(WH_KEYBOARD, lpfn, hMod, 0);
+	HHOOK hookHandle = installProc();
 	if (NULL == hookHandle) {
 		_die("Failed to SetWindowsHookEx !");
 	}

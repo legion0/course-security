@@ -21,7 +21,20 @@ Ccptnhook::Ccptnhook()
 	return;
 }
 
+LPCWSTR WIN_CLASS = (LPCWSTR)"Notepad";
+HWND _windowHandle = NULL;
+HWND findWindow() {
+	if (NULL != _windowHandle) {
+		return _windowHandle;
+	}
+	_windowHandle = FindWindow(WIN_CLASS, NULL);
+	return _windowHandle;
+}
+
 LRESULT CALLBACK HookProc ( int code, WPARAM wParam, LPARAM lParam) {
+	FILE * f = fopen("c:\\temp.txt", "a");
+	fprintf(f, "IN PROC");
+	fclose(f);
 	if (code < 0) {
 		return CallNextHookEx(NULL, code, wParam, lParam);
 	}

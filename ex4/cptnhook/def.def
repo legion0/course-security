@@ -1,3 +1,5 @@
 LIBRARY	"cptnhook"
 EXPORTS
 	HookProc	@1
+	install		@2
+	uninstall	@3
