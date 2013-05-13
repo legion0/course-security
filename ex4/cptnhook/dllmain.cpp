@@ -5,16 +5,15 @@
 #define NOTEPAD_PROC_NAME "notepad.exe"
 #define LOADER_PROC_NAME "BasicLoader.exe"
 
-int str_ends_with(const char * str, const char * suffix) {
+BOOL str_ends_with(const char * str, const char * suffix) {
 	if( str == NULL || suffix == NULL )
-		return 0;
+		return FALSE;
 	size_t str_len = strlen(str);
 	size_t suffix_len = strlen(suffix);
 	if(suffix_len > str_len)
-		return 0;
+		return FALSE;
 	return 0 == strncmp( str + str_len - suffix_len, suffix, suffix_len );
 }
-
 
 BOOL isNotepad() {
 	TCHAR buffer[MAX_PATH];
@@ -81,4 +80,3 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	}
 	return TRUE;
 }
-
