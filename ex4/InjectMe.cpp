@@ -1,5 +1,5 @@
 #include "windows.h"
-int main (){return 99;}
+
 DWORD WINAPI InjectMe(LPVOID lpParameter){
 	typedef HMODULE(*_LoadLibrary)(LPCSTR);
 	typedef FARPROC(*_GetProcAddress)(HMODULE,LPCSTR);
@@ -26,10 +26,13 @@ DWORD WINAPI InjectMe(LPVOID lpParameter){
 
 	installProc = (HOOKPROC)gpa(hMod,hookProc);
 	if (NULL == installProc){
-		return -1;
+		return -2;
 	}
 
 	//0x7e431211 - SetWindowsHookExA - Skip IAT
-	swh = (_SetWindowsHookEx)0x7c80ae40;
+	swh = (_SetWindowsHookEx)0x7e431211;
 	swh(WH_GETMESSAGE, installProc, hMod, 0);
+	return 0;
+	
 }
+int main (){return InjectMe((LPVOID)NULL);}

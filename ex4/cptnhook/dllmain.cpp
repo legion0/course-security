@@ -3,7 +3,8 @@
 #include "cptnhook.h"
 
 #define NOTEPAD_PROC_NAME "notepad.exe"
-#define LOADER_PROC_NAME "BasicLoader.exe"
+#define LOADER_PROC_NAME "explorer.exe"
+#define INJECTOR_PROC_NAME "InjectMe.exe"
 
 BOOL str_ends_with(const char * str, const char * suffix) {
 	if( str == NULL || suffix == NULL )
@@ -40,6 +41,18 @@ BOOL isLoader() {
 	return FALSE;
 }
 
+BOOL isInject(){
+	TCHAR buffer[MAX_PATH];
+	char cbuffer[MAX_PATH];
+	if (GetModuleFileName(NULL, buffer, MAX_PATH)) {
+		int i = 0;
+		for (i =0; i< MAX_PATH; i++) {
+			cbuffer[i] = (char)buffer[i];
+		}
+		return str_ends_with(cbuffer, INJECTOR_PROC_NAME);
+	}
+	return FALSE;
+}
 HMODULE _hModule = NULL;
 HHOOK _hookHandle = NULL;
 
@@ -62,22 +75,31 @@ BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
 					 ) {
+
+	FILE* f;
+	fopen_s(&f, "c:\\temp.txt", "a");
+	fprintf(f, "Hello World\n");
+	fclose(f);
+
 	_hModule = hModule;
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:
-		if (!(isNotepad() || isLoader())) {
-			return FALSE;
+		if (!(isNotepad() || isLoader() || isInject())) {
+			return TRUE;//XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 		}
 		break;
 	case DLL_THREAD_ATTACH:
 		break;
 	case DLL_THREAD_DETACH:
-		uninstall(_hookHandle);
 		break;
 	case DLL_PROCESS_DETACH:
-		uninstall(_hookHandle);
 		break;
 	}
+
+	fopen_s(&f, "c:\\temp.txt", "a");
+	fprintf(f, "Loaded\n");
+	fclose(f);
+
 	return TRUE;
 }
 

