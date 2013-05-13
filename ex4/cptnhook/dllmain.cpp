@@ -24,9 +24,6 @@ BOOL isNotepad() {
 		for (i =0; i< MAX_PATH; i++) {
 			cbuffer[i] = (char)buffer[i];
 		}
-		FILE * f = fopen("c:\\temp.txt", "a");
-		fprintf(f, "%s\n", cbuffer);
-		fclose(f);
 		return str_ends_with(cbuffer, NOTEPAD_PROC_NAME);
 	}
 	return FALSE;
@@ -39,9 +36,6 @@ BOOL isLoader() {
 		for (i =0; i< MAX_PATH; i++) {
 			cbuffer[i] = (char)buffer[i];
 		}
-		FILE * f = fopen("c:\\temp.txt", "a");
-		fprintf(f, "%s\n", cbuffer);
-		fclose(f);
 		return str_ends_with(cbuffer, LOADER_PROC_NAME);
 	}
 	return FALSE;
@@ -54,7 +48,7 @@ HHOOK install() {
 	if (NULL == _hModule) {
 		return NULL;
 	}
-	_hookHandle = SetWindowsHookEx(WH_KEYBOARD, HookProc, _hModule, 0);
+	_hookHandle = SetWindowsHookEx(WH_GETMESSAGE, HookProc, _hModule, 0);
 	return _hookHandle;
 }
 
@@ -70,28 +64,21 @@ BOOL APIENTRY DllMain( HMODULE hModule,
                        LPVOID lpReserved
 					 ) {
 	_hModule = hModule;
-	FILE * f = fopen("c:\\temp.txt", "a");
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:
-		fprintf(f, "DLL_PROCESS_ATTACH\n");
-		fprintf(f, "isNotepad = %d\n", isNotepad());
 		if (!(isNotepad() || isLoader())) {
-			fclose(f);
 			return FALSE;
 		}
 		break;
 	case DLL_THREAD_ATTACH:
 		break;
 	case DLL_THREAD_DETACH:
-		fprintf(f, "DLL_THREAD_DETACH\n");
 		uninstall();
 		break;
 	case DLL_PROCESS_DETACH:
-		fprintf(f, "DLL_PROC_DETACH\n");
 		uninstall();
 		break;
 	}
-	fclose(f);
 	return TRUE;
 }
 
