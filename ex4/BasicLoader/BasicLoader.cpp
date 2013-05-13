@@ -34,7 +34,8 @@ void _die(char * arg) {
 #define PROC_NAME "HookProc"
 
 int _tmain(int argc, _TCHAR* argv[]) {
-	typedef HHOOK (*HINSTALLER)(void);
+	typedef HHOOK (*HINSTALLER)(HMODULE);
+	typedef BOOL (*HUNINSTALLER)(HHOOK);
 	FILE * f = fopen("c:\\temp.txt", "w");
 	fclose(f);
 
@@ -46,12 +47,17 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	if (NULL == installProc) {
 		_die("Failed to GetProcAddress !");
 	}
-	HHOOK hookHandle = installProc();
+	HHOOK hookHandle = installProc(hMod);
 	if (NULL == hookHandle) {
 		_die("Failed to SetWindowsHookEx !");
 	}
 	int i;
 	scanf_s("%d",&i);
+	HUNINSTALLER uninstallProc = (HUNINSTALLER)GetProcAddress(hMod, "uninstall");
+	if (NULL == uninstallProc) {
+		_die("Failed to GetProcAddress 2 !");
+	}
+	uninstallProc(hookHandle);
 	return 0;
 }
 

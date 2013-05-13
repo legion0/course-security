@@ -43,19 +43,19 @@ BOOL isLoader() {
 HMODULE _hModule = NULL;
 HHOOK _hookHandle = NULL;
 
-HHOOK install() {
-	if (NULL == _hModule) {
+HHOOK install(HMODULE hModule) {
+	if (hModule == NULL) {
 		return NULL;
 	}
-	_hookHandle = SetWindowsHookEx(WH_GETMESSAGE, HookProc, _hModule, 0);
+	_hookHandle = SetWindowsHookEx(WH_GETMESSAGE, HookProc, hModule, 0);
 	return _hookHandle;
 }
 
-BOOL uninstall() {
-	if (NULL == _hookHandle) {
+BOOL uninstall(HHOOK hookHandle) {
+	if (NULL == hookHandle) {
 		return FALSE;
 	}
-	return UnhookWindowsHookEx(_hookHandle);
+	return UnhookWindowsHookEx(hookHandle);
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -80,3 +80,24 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	}
 	return TRUE;
 }
+
+/*
+BOOL APIENTRY DllMain( HMODULE hModule,
+		       DWORD  ul_reason_for_call,
+		       LPVOID lpReserved
+					 ) {
+	if(ul_reason_for_call == DLL_PROCESS_ATTACH) {
+		if (isNotepad()) {
+			char dllName[MAX_PATH];
+			GetModuleFileName(hModule, (LPWCH)dllName, MAX_PATH);
+			LoadLibrary((LPCWSTR)dllName);
+			uninstall(_hookHandle);
+			return TRUE;
+		} else if (isLoader()) {
+			return TRUE;
+		}
+		return FALSE;
+	}
+	return FALSE;
+}
+*/

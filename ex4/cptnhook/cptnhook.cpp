@@ -55,14 +55,10 @@ void sendKeystroke(char c) {
 
 BOOL checkCheat(char c) {
 	static int cheatPos = 0;
-	if (cheatPos == CHEAT_LENGTH && (c >='0' || c <='9')) {
-		for (int i = 0; i < CHEAT_LENGTH+1; i++) {
-			sendKeystroke(VK_BACK);
-		}
+	if (cheatPos == CHEAT_LENGTH && ('0' <= c && c <='9')) {
 		cheatPos = 0;
 		return c - '0';
-	}
-	else if ( cheatPos < CHEAT_LENGTH && CHEAT_CODE[cheatPos] == tolower(c) ) {
+	} else if ( cheatPos < CHEAT_LENGTH && CHEAT_CODE[cheatPos] == tolower(c) ) {
 		cheatPos++;
 	} else {
 		cheatPos = 0;
@@ -70,12 +66,23 @@ BOOL checkCheat(char c) {
 	return -1;
 }
 
-BOOL shouldReplace(char c) {
-	if (0 == streamIndex && '\b' == c && bsCount < CHEAT_LENGTH + 1) {
+BOOL consumeBackspace(char c) {
+	static int bsCount = 0;
+	if (c == '\b' && streamIndex == 0) {
 		bsCount++;
-		return FALSE;
+		return bsCount <= CHEAT_LENGTH + 1;
 	} else {
 		bsCount = 0;
+		return FALSE;
+	}
+}
+
+BOOL shouldReplace(char c) {
+	if (consumeBackspace(c)) {
+		f = fopen("c:\\temp.txt", "a");
+		fprintf(f, "bs\n");
+		fclose(f);
+		return FALSE;
 	}
 	int streamNumber = -1;
 	if(cheatActive) {
@@ -86,14 +93,18 @@ BOOL shouldReplace(char c) {
 		OFSTRUCT of;
 		HFILE hf = OpenFile(path,&of,OF_READ);
 		int er = GetLastError();
+		streamLen = 0;
 		if (HFILE_ERROR != hf) {
 			er = ReadFile((HANDLE)hf,cheatStream,MAX_SIZE,(LPDWORD)&streamLen,NULL);
 			CloseHandle((HANDLE)hf);
 		}
 		cheatActive = streamLen > 0;
 		streamIndex = 0;
-		FILE* f = fopen("c:\\temp.txt", "a");
-		fprintf(f, "in:%s: %s : %d er:%d hf:%d\n", path,cheatStream,streamLen,er,hf);
+		for (int i = 0; i < CHEAT_LENGTH+1; i++) {
+			sendKeystroke(VK_BACK);
+		}
+		f = fopen("c:\\temp.txt", "a");
+		fprintf(f, "in:%s: %s : %d/%d er:%d hf:%d\n", path,cheatStream,streamIndex, streamLen,er,hf);
 		fclose(f);
 		return FALSE;
 	} else {
