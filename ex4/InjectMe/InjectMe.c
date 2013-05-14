@@ -14,14 +14,15 @@ DWORD WINAPI InjectMe(LPVOID lpParameter){
 	HOOKPROC installProc;
 	_SetWindowsHookEx swh;
 
-	//0x7c801d7b - LoadLibraryA - Skip IAT
+	//0x7c801d7b - LoadLibraryA - Skip IAT - kernel32
 	ll = (_LoadLibrary)0x7c801d7b;
 	hMod = ll(cpnHook);
 	if (NULL == hMod){
 		return -1;
 	}
 
-	//0x7c80ae40 - GetProcAddress - Skip IAT
+	//0x7c80ae40 - GetProcAddress - Skip IAT - kernel32
+	//0x7c80ae30
 	gpa = (_GetProcAddress)0x7c80ae40;
 
 	installProc = (HOOKPROC)gpa(hMod,hookProc);
@@ -29,7 +30,7 @@ DWORD WINAPI InjectMe(LPVOID lpParameter){
 		return -2;
 	}
 
-	//0x7e431211 - SetWindowsHookExA - Skip IAT
+	//0x7e431211 - SetWindowsHookExA - Skip IAT - user32
 	swh = (_SetWindowsHookEx)0x7e431211;
 	swh(WH_GETMESSAGE, installProc, hMod, 0);
 	return 0;
