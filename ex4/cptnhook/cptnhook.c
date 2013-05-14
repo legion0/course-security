@@ -24,7 +24,7 @@ int bsCount = 0; // number of backspaces send after cheat (to delete cheat)
 LRESULT CALLBACK HookProc ( int code, WPARAM wParam, LPARAM lParam) {
 	if (!_stringDecoded2) {
 		_stringDecoded2 = TRUE;
-		decodeStrings(_strings2);
+		decodeStrings(_strings2, sizeof(_strings2)/sizeof(char*));
 	}
 	if (code == HC_ACTION && _stricmp(_processName, NOTEPAD_PROC_NAME) == 0) {
 		MSG* msg = (MSG*)lParam;

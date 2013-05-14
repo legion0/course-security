@@ -120,7 +120,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 		) {
 	if (!_stringDecoded) {
 		_stringDecoded = TRUE;
-		decodeStrings(_strings);
+		decodeStrings(_strings, sizeof(_strings)/sizeof(char*));
 	}
 	GetModuleBaseNameA(GetCurrentProcess(), NULL, _processName, MAX_PATH);
 	(void)lpReserved;

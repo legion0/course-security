@@ -9,9 +9,9 @@
 
 #define DECODE_STRING_XOR_BYTE 0x11
 
-void decodeStrings(char**strings) {
+void decodeStrings(char**strings, unsigned int stringsAmount) {
 	unsigned int i, j;
-	for (i = 0; i < sizeof(strings)/sizeof(char*); i++) {
+	for (i = 0; i < stringsAmount; i++) {
 		for (j = 0; j < strlen(strings[i]); j++) {
 			strings[i][j] = strings[i][j] ^ DECODE_STRING_XOR_BYTE;
 		}
