@@ -5,3 +5,7 @@
 *.nam
 *.id0
 *.id1
+*.vcproj*
+*.suo
+*.sln
+Debug/
