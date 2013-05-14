@@ -1,7 +1,7 @@
 EX=4
 COMPILER=
 CFLAGS=
-SOURCES = cptnhook.c cptnhook.h peterpan.c peterpan.h
+SOURCES = cptnhook.c cptnhook.h cptnhook.def peterpan.c peterpan.h
 EXTRAFILES =
 TARGETS =
 

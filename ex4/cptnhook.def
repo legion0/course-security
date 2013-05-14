@@ -1,0 +1,3 @@
+LIBRARY	"cptnhook"
+EXPORTS
+	HookProc	@1
