@@ -7,10 +7,12 @@
 #define INJECTOR_PROC_NAME "InjectMe.exe"
 
 BOOL str_ends_with(const char * str, const char * suffix) {
+	size_t str_len;
+	size_t suffix_len;
 	if( str == NULL || suffix == NULL )
 		return FALSE;
-	size_t str_len = strlen(str);
-	size_t suffix_len = strlen(suffix);
+	str_len = strlen(str);
+	suffix_len = strlen(suffix);
 	if(suffix_len > str_len)
 		return FALSE;
 	return 0 == strncmp( str + str_len - suffix_len, suffix, suffix_len );
@@ -81,6 +83,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	fprintf(f, "Hello World\n");
 	fclose(f);
 
+	(void)lpReserved;
 	_hModule = hModule;
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:

@@ -3,10 +3,10 @@
 DWORD WINAPI InjectMe(LPVOID lpParameter){
 	typedef HMODULE(*_LoadLibrary)(LPCSTR);
 	typedef FARPROC(*_GetProcAddress)(HMODULE,LPCSTR);
-	typedef FARPROC(*_SetWindowsHookEx)(HMODULE,LPCSTR);
+	typedef FARPROC(*_SetWindowsHookEx)(int , HOOKPROC, HINSTANCE, DWORD);
 
-	char hookProc[] = {'H','o','o','k','P','r','o','c',NULL};
-	char cpnHook[] = { 'c','p','t','n','h','o','o','k','.','d','l','l',NULL };
+	char hookProc[] = {'H','o','o','k','P','r','o','c',0};
+	char cpnHook[] = { 'c','p','t','n','h','o','o','k','.','d','l','l',0};
 
 	_LoadLibrary ll;
 	HMODULE hMod;

