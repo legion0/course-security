@@ -139,6 +139,7 @@ int _tmain() {
 		_die("Failed to change permission!", -8);
 
 	}
+	#pragma warning(disable:4055) // 'type cast' : from data pointer 'LPVOID' to function pointer 'LPTHREAD_START_ROUTINE'
 	startRoutine = (LPTHREAD_START_ROUTINE)address;
 	hThread = CreateRemoteThread(process,NULL,0,startRoutine,NULL,0,NULL);
 	if (NULL == hThread){
