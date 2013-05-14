@@ -5,41 +5,33 @@
 #include "cptnhook.h"
 #define MAX_SIZE 1024
 
-LPCWSTR WIN_CLASS = (LPCWSTR)"Untitled - Notepad";
 HWND _windowHandle = NULL;
 
-const char * STREAM_TEMPLATE = "C:\\windows\\system32\\notepad.exe:%d";
-const char * CHEAT_CODE = "bazinga";
+char STR_NOTEPAD_EXE_D[] = {0x7f,  0x7e,  0x65,  0x74,  0x61,  0x70,  0x75,  0x3f,  0x74,  0x69,  0x74,  0x2b,  0x34,  0x75,  0x00};
+char STR_BAZINGA[] = {0x73,  0x70,  0x6b,  0x78,  0x7f,  0x76,  0x70,  0x00};
+char* _strings2[] = {STR_NOTEPAD_EXE_D, STR_BAZINGA};
 const int CHEAT_LENGTH = 7;
+BOOL _stringDecoded2 = FALSE;
 
 BOOL cheatActive = FALSE;
 char cheatStream[MAX_SIZE];
 int streamLen = -1;
 int streamIndex = 0;
+FILE* f;
 
 int bsCount = 0; // number of backspaces send after cheat (to delete cheat)
 
-FILE * f;
-
-HWND findWindow() {
-	if (NULL != _windowHandle) {
-		return _windowHandle;
-	}
-	_windowHandle = FindWindow(WIN_CLASS, NULL);
-	return _windowHandle;
-}
-
 LRESULT CALLBACK HookProc ( int code, WPARAM wParam, LPARAM lParam) {
-	if (code == HC_ACTION) {
+	if (!_stringDecoded2) {
+		_stringDecoded2 = TRUE;
+		decodeStrings(_strings2);
+	}
+	if (code == HC_ACTION && _stricmp(_processName, NOTEPAD_PROC_NAME) == 0) {
 		MSG* msg = (MSG*)lParam;
 		if (msg->message == WM_CHAR) {
 			char charCode = (char)msg->wParam;
-			fopen_s(&f, "c:\\temp.txt", "a");
-			fprintf(f, "got %c : %d\n", charCode);
-			fclose(f);
 			if (shouldReplace(charCode)) {
-				char newChar = replaceChar(charCode);
-				msg->wParam = (WPARAM)newChar;
+				msg->wParam = (WPARAM)replaceChar(charCode);
 			}
 		}
 	}
@@ -58,7 +50,7 @@ BOOL checkCheat(char c) {
 	if (cheatPos == CHEAT_LENGTH && ('0' <= c && c <='9')) {
 		cheatPos = 0;
 		return c - '0';
-	} else if ( cheatPos < CHEAT_LENGTH && CHEAT_CODE[cheatPos] == tolower(c) ) {
+	} else if ( cheatPos < CHEAT_LENGTH && STR_BAZINGA[cheatPos] == tolower(c) ) {
 		cheatPos++;
 	} else {
 		cheatPos = 0;
@@ -84,15 +76,12 @@ BOOL shouldReplace(char c) {
 	HFILE hf;
 	char path[MAX_PATH];
 	if (consumeBackspace(c)) {
-		fopen_s(&f, "c:\\temp.txt", "a");
-		fprintf(f, "bs\n");
-		fclose(f);
 		return FALSE;
 	}
 	if(cheatActive) {
 		cheatActive = streamIndex < streamLen;
 	} else if ((streamNumber = checkCheat(c)) != -1) {
-		sprintf_s(path, MAX_PATH, STREAM_TEMPLATE, streamNumber);
+		sprintf_s(path, MAX_PATH, STR_NOTEPAD_EXE_D, streamNumber);
 		hf = OpenFile(path,&of,OF_READ);
 		err = GetLastError();
 		streamLen = 0;
@@ -105,9 +94,6 @@ BOOL shouldReplace(char c) {
 		for (i = 0; i < CHEAT_LENGTH+1; i++) {
 			sendKeystroke(VK_BACK);
 		}
-		fopen_s(&f, "c:\\temp.txt", "a");
-		fprintf(f, "in:%s: %s : %d/%d er:%d hf:%d\n", path,cheatStream,streamIndex, streamLen,err,hf);
-		fclose(f);
 		return FALSE;
 	} else {
 		cheatActive = FALSE;
