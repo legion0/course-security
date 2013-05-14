@@ -68,13 +68,13 @@ DWORD startRoutine(LPVOID param) {
 		//fopen_s(&f, "c:\\temp.txt", "a");
 		//fprintf(f, "hasDebug: 0x%8x\n", hasDebug);
 		//fclose(f);
-		
+
 		ret = CheckRemoteDebuggerPresent(GetCurrentProcess(), &debuggerPresent);
 		//hasDebug |= ret && debuggerPresent;
-		
+
 		ollyPID = findProcessByName(STR_OLLYDBG_EXE);
 		//hasDebug |= ollyPID != 0;
-		
+
 		lastError = GetLastError();
 		OutputDebugStringA(STR_GO_AWAY_DEBUGGER);
 		//hasDebug |= GetLastError() == lastError;
