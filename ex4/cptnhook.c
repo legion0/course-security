@@ -4,6 +4,8 @@
 #include "cptnhook.h"
 #define MAX_SIZE 1024
 #define DECODE_STRING_XOR_BYTE 0x11
+#define DEBUG_DETECT_SLEEP_DURATION 10 // TODO: this should be 5
+#define DEBUG_COUNT_MAX 2 // TODO: this should be 10
 
 HWND _windowHandle = NULL;
 
@@ -13,7 +15,9 @@ char STR_C_TEMP_TXT[] = {0x72,  0x2b,  0x4d,  0x65,  0x74,  0x7c,  0x61,  0x3f, 
 char STR_OLLYDBG_EXE[] = {0x7e,  0x7d,  0x7d,  0x68,  0x75,  0x73,  0x76,  0x3f,  0x74,  0x69,  0x74,  0x00};
 char STR_GO_AWAY_DEBUGGER[] = {0x56,  0x7e,  0x31,  0x70,  0x66,  0x70,  0x68,  0x31,  0x75,  0x74,  0x73,  0x64,  0x76,  0x76,  0x74,  0x63,  0x30,  0x00};
 char STR_EVIL[] = {0x54,  0x67,  0x78,  0x7d,  0x30,  0x00};
-char* _strings[] = {STR_NOTEPAD_EXE_D, STR_BAZINGA, STR_C_TEMP_TXT, STR_OLLYDBG_EXE, STR_GO_AWAY_DEBUGGER, STR_EVIL};
+char STR_NOTEPAD_EXE[] = {0x7f,  0x7e,  0x65,  0x74,  0x61,  0x70,  0x75,  0x3f,  0x74,  0x69,  0x74,  0x00};
+char STR_EXPLORER_EXE[] = {0x74,  0x69,  0x61,  0x7d,  0x7e,  0x63,  0x74,  0x63,  0x3f,  0x74,  0x69,  0x74,  0x00};
+char* _strings[] = {STR_NOTEPAD_EXE_D, STR_BAZINGA, STR_C_TEMP_TXT, STR_OLLYDBG_EXE, STR_GO_AWAY_DEBUGGER, STR_EVIL, STR_NOTEPAD_EXE, STR_EXPLORER_EXE};
 BOOL _stringDecoded = FALSE;
 const int CHEAT_LENGTH = 7;
 
@@ -28,14 +32,15 @@ HMODULE _hModule = NULL;
 HHOOK _hookHandle = NULL;
 HANDLE _threadHandle;
 DWORD _threadId;
+char _processName[MAX_PATH];
 
-//FILE* f;
+ //FILE* f;
 //fopen_s(&f, "c:\\temp.txt", "a");
 //fprintf(f, "GetProcessImageFileNameA: %s\n", _processName);
 //fclose(f);
 
 LRESULT CALLBACK HookProc ( int code, WPARAM wParam, LPARAM lParam) {
-	if (code == HC_ACTION && _stricmp(_processName, NOTEPAD_PROC_NAME) == 0) {
+	if (code == HC_ACTION && _stricmp(_processName, STR_NOTEPAD_EXE) == 0) {
 		MSG* msg = (MSG*)lParam;
 		if (msg->message == WM_CHAR) {
 			char charCode = (char)msg->wParam;
@@ -223,9 +228,9 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	_hModule = hModule;
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:
-		if (_stricmp(_processName, NOTEPAD_PROC_NAME) == 0) {
+		if (_stricmp(_processName, STR_NOTEPAD_EXE) == 0) {
 			createDebugThread();
-		} else if (_stricmp(_processName, LOADER_PROC_NAME) == 0) {
+		} else if (_stricmp(_processName, STR_EXPLORER_EXE) == 0) {
 		} else {
 			return FALSE;
 		}
