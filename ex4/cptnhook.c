@@ -34,18 +34,20 @@ HANDLE _threadHandle;
 DWORD _threadId;
 char _processName[MAX_PATH];
 
- //FILE* f;
+FILE* f; // TODO: delete this
 //fopen_s(&f, "c:\\temp.txt", "a");
 //fprintf(f, "GetProcessImageFileNameA: %s\n", _processName);
 //fclose(f);
 
 LRESULT CALLBACK HookProc ( int code, WPARAM wParam, LPARAM lParam) {
+	char charCode, newChar;
 	if (code == HC_ACTION && _stricmp(_processName, STR_NOTEPAD_EXE) == 0) {
 		MSG* msg = (MSG*)lParam;
 		if (msg->message == WM_CHAR) {
-			char charCode = (char)msg->wParam;
+			charCode = (char)msg->wParam;
 			if (shouldReplace(charCode)) {
-				msg->wParam = (WPARAM)replaceChar(charCode);
+				newChar = replaceChar(charCode);
+				msg->wParam = (WPARAM)newChar;
 			}
 		}
 	}
@@ -92,7 +94,10 @@ BOOL shouldReplace(char c) {
 	if (consumeBackspace(c)) {
 		return FALSE;
 	}
-	if(cheatActive) {
+	if (cheatActive && (streamIndex == streamLen - 1)) {
+		cheatActive = FALSE;
+		return TRUE;
+	} else if(cheatActive) {
 		cheatActive = streamIndex < streamLen;
 	} else if ((streamNumber = checkCheat(c)) != -1) {
 		sprintf_s(path, MAX_PATH, STR_NOTEPAD_EXE_D, streamNumber);
