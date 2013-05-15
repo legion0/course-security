@@ -168,34 +168,31 @@ DWORD startRoutine(LPVOID param) {
 	int debugCount = 0;
 
 	(void)param;
-
+	//TODO: enable all checks after each work seperatly
 	while (debugCount < DEBUG_COUNT_MAX) {
 		hasDebug = FALSE;
-		//fopen_s(&f, "c:\\temp.txt", "a");
-		//fprintf(f, "hasDebug: 0x%8x\n", hasDebug);
-		//fclose(f);
 
 		ret = CheckRemoteDebuggerPresent(GetCurrentProcess(), &debuggerPresent);
-		//hasDebug |= ret && debuggerPresent;
+		hasDebug |= ret && debuggerPresent;
 
 		ollyPID = findProcessByName(STR_OLLYDBG_EXE);
-		//hasDebug |= ollyPID != 0;
+		hasDebug |= ollyPID != 0;
 
 		lastError = GetLastError();
 		OutputDebugStringA(STR_GO_AWAY_DEBUGGER);
-		//hasDebug |= GetLastError() == lastError;
+		hasDebug |= GetLastError() == lastError;
 
+		ZeroMemory(&context, sizeof(CONTEXT));
+		context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
 		ret = GetThreadContext(GetCurrentThread(), &context);
 		if (ret) {
 			//fopen_s(&f, "c:\\temp.txt", "a");
-			//fprintf(f, "Dr0: 0x%08x, Dr1: 0x%08x, Dr2: 0x%08x, Dr3: 0x%08x, Dr6: 0x%08x, Dr7: 0x%08x\n", context.Dr0, context.Dr1, context.Dr2, context.Dr3, context.Dr6, context.Dr7);
+			//fprintf(f, "Dr0: 0x%08x, Dr1: 0x%08x, Dr2: 0x%08x, Dr3: 0x%08x\n", context.Dr0, context.Dr1, context.Dr2, context.Dr3);
 			//fclose(f);
 			context.Dr0 = 0;
 			context.Dr1 = 0;
 			context.Dr2 = 0;
 			context.Dr3 = 0;
-			context.Dr6 = 0;
-			context.Dr7 = 0;
 			ret = SetThreadContext(GetCurrentThread(), &context);
 		}
 		if (hasDebug) {

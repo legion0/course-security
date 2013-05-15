@@ -72,6 +72,7 @@ int main() {
 
 	//TODO: replace STR_NOTEPAD_EXE with STR_EXPLORER_EXE
 	pid = findProcessByName(STR_NOTEPAD_EXE);
+	//pid = findProcessByName(STR_EXPLORER_EXE);
 	if (pid == 0) {
 		exit(-1);
 	}
