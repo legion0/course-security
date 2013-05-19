@@ -12,14 +12,18 @@ DWORD WINAPI InjectMe(LPVOID lpParameter){
 	BOOL _true = TRUE;
 
 	//0x7c801d7b - LoadLibraryA - Skip IAT - kernel32
-	_LoadLibrary ll = (_LoadLibrary)0x7c801d7b;
+	//_LoadLibrary ll = (_LoadLibrary)0x7c801d7b;
+	_LoadLibrary ll = (_LoadLibrary)0x11111111;
 	//0x7c80ae40 / 0x7c80ae30 - GetProcAddress - Skip IAT - kernel32
 	//_GetProcAddress gpa = (_GetProcAddress)0x7c80ae40;
-	_GetProcAddress gpa = (_GetProcAddress)0x7c80ae30;
+	//_GetProcAddress gpa = (_GetProcAddress)0x7c80ae30;
+	_GetProcAddress gpa = (_GetProcAddress)0x12345678;
 	//0x7e431211 - SetWindowsHookExA - Skip IAT - user32
-	_SetWindowsHookEx swh = (_SetWindowsHookEx)0x7e431211;
+	//_SetWindowsHookEx swh = (_SetWindowsHookEx)0x7e431211;
+	_SetWindowsHookEx swh = (_SetWindowsHookEx)0x13371337;
 	//0x7c802446 - Sleep - Skip IAT - kernel32
-	_Sleep slp = (_Sleep)0x7c802446;
+	//_Sleep slp = (_Sleep)0x7c802446;
+	_Sleep slp = (_Sleep)0x12341234;
 
 	HOOKPROC installProc;
 	HMODULE hMod;
