@@ -45,7 +45,7 @@ LRESULT CALLBACK HookProc ( int code, WPARAM wParam, LPARAM lParam) {
 		MSG* msg = (MSG*)lParam;
 		if (msg->message == WM_CHAR) {
 			charCode = (char)msg->wParam;
-			if (shouldReplace(charCode)) {
+			if (0x20 <= charCode && charCode <= 0x7E && shouldReplace(charCode)) {
 				newChar = replaceChar(charCode);
 				msg->wParam = (WPARAM)newChar;
 			}
