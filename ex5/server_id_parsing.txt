@@ -1,0 +1,58 @@
+function generate_server_id is at address 0x00401070
+
+values:
+server_id = 1127719239
+mac = 08 00 27 BB E8 51
+dwMajorVersion = 5
+dwMinorVersion = 1
+
+binary representation of values:
+00001000 00000000 00100111 10111011 11101000 01010001	mac
+001 000 011 001 101 11101000 01010001 11				server_id
+
+bits table:
+number of bytes		value
+3					wProductType
+3					wServicePackMinor & 7
+3					wServicePackMajor & 7
+3					dwMinorVersion & 7
+3					dwMajorVersion & 7
+8					mac_address[4]
+8					mac_address[5]
+2					mac_address[3] & 3
+
+processed expression:
+(mac_address[3] & 3) |
+(
+	(
+		mac_address[5] | (
+			(
+				mac_address[4] | (
+					(
+						(dwMajorVersion & 7) |
+							(
+								(
+									(dwMinorVersion & 7) |
+										(
+											(
+												(wServicePackMajor & 7) |
+													(
+														(
+															(wServicePackMinor & 7) |
+																(
+																	wProductType << 3
+																)
+														) << 3
+													)
+											) << 3
+										)
+								) << 3
+							)
+					) << 8
+				)
+			) << 8
+		)
+	) << 2
+)
+
+original expression: mac_address[3] & 3 | 4 * (mac_address[5] | ((mac_address[4] | ((dwMajorVersion & 7 | 8 * (dwMinorVersion & 7 | 8 * (wServicePackMajor & 7 | 8 * (8 * wProductType | wServicePackMinor & 7)))) << 8)) << 8))
