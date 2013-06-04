@@ -1,0 +1,39 @@
+legion, 303756175, phenixdoc@gmail.com
+bg1987, 306224403, bg1987@gmail.com
+
+===========
+Exercise 5
+===========
+
+Submitted Files
+---------------
+README - This file.
+
+peek.py
+parseSID.py
+protocol.txt
+
+Answers to Exercise Questions
+-----------------------------
+
+Part 2 - The Server's ID:
+	The id is generated from the mac address and os information,
+	this exposes alot of information about the system making a hacker's job much easier.
+	SID generation: bits table from MSb to LSb
+					number of bytes		value
+					3					wProductType
+					3					wServicePackMinor & 7
+					3					wServicePackMajor & 7
+					3					dwMinorVersion & 7
+					3					dwMajorVersion & 7
+					8					mac_address[4]
+					8					mac_address[5]
+					2					mac_address[3] & 3
+Microsoft window version info: http://msdn.microsoft.com/en-us/library/windows/desktop/ms724834(v=vs.85).aspx
+
+Part 3 - File Access Weakness:
+	The check for directory traversal is done on the client and not on the server.
+	An attacker can send a malicious packet with a path containing directory traversal and gain access to files he shouldn't.
+
+Remarks
+-------
