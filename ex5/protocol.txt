@@ -1,0 +1,53 @@
+UDP 1: Broadcast to detect server ip/port
+Ports: 1338 -> 1337
+Content:
+	magic			2		Constant value. Always 0xDEAF
+	packet_type		1		Constant value. Always 0x01
+	server_id		4		The id of the server to look for.
+
+UDP 2: Response with server ip/port
+Ports: 1337 -> 1338
+Content:
+	magic				2		Constant value. Always 0xDEAF
+	packet_type			1		Constant value. Always 0x02
+	server_id			4		The id of the server responding.
+	server_port			2		The port the server is listening on.
+	validation			4		(server_id ^ 0xCAFEBABE) + 4 * (server_port ^ 0x652)
+
+TCP 1: List Files Request
+Ports: client_port (random) -> server_port
+Content:
+	magic				2		Constant value. Always 0xDEAF
+	packet_type			1		Constant value. Always 0x01
+	path_length			2		(a) The length of the path to list.
+	directory_path		a		The path to list files for.
+
+TCP 2: Directory Listing
+Ports: server_port -> client_port
+Content:
+	magic				2		Constant value. Always 0xDEAF
+	packet_type			1		Constant value. Always 0x02
+	files_count			2		(n) The amount of files in the requested directory.
+	file_struct			*		The struct file_struct repeated n times.
+
+file_struct:
+	file_attributes		1		The file attributes of a file (http://msdn.microsoft.com/en-us/library/windows/desktop/gg258117(v=vs.85).aspx).
+	file_size			4		The size of the file in bytes.
+	file_name_length	2		(a) The length of the file name.
+	file_name			a		The file name.
+
+TCP 3: File Request
+Ports: client_port -> server_port
+Content:
+	magic				2		Constant value. Always 0xDEAF
+	packet_type			1		Constant value. Always 0x03
+	file_name_length	2		(a) The length of the file name.
+	file_name			a		The file name.
+
+TCP 4: File Response
+Ports: server_port -> client_port
+Content:
+	magic				2		Constant value. Always 0xDEAF
+	packet_type			1		Constant value. Always 0x04
+	file_length			4		(k) The length of the file.
+	file_content		k		The binary content of the file.
