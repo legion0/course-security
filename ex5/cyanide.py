@@ -4,7 +4,8 @@ from ctypes import *
 import os
 import sys
 
-UDP_IP = "192.168.146.139"
+BUFFER_SIZE = 1024*128 #128KB
+UDP_IP = socket.gethostbyname(socket.gethostname())
 UDP_PORT = 1337
 udpSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
 udpSock.bind((UDP_IP, UDP_PORT))
@@ -26,11 +27,18 @@ udp_resp_header = '\xde\xaf\x02'
 
 tcpSock.bind((UDP_IP, myport))
 
-base = "C:\\"
+base = "."
 
 
 def SendList(path):
 	bp = os.path.join(base,path)
+	
+	startPath = os.path.abspath(base)
+	reqPath = os.path.abspath(bp)
+	pref = os.path.commonprefix([startPath,reqPath])
+	if not pref = startPath:
+		return ''
+		
 	files = os.listdir(bp)
 	header = struct.pack('!3sh',ListFilesResp,len(files))
 	data = ''
@@ -64,6 +72,13 @@ def udpIdentify(data,addr):
 
 def SendFile(path):
 	p = os.path.join(base,path)
+	#verify no dir traversal
+	startPath = os.path.abspath(base)
+	reqPath = os.path.abspath(p)
+	pref = os.path.commonprefix([startPath,reqPath])
+	if not pref = startPath:
+		return '',''
+		
 	if not os.path.isfile(p):
 		return ''
 	size = os.path.getsize(p)
@@ -76,13 +91,13 @@ def SendFile(path):
 	return GetFileResp+data , fdata
 	
 while True:
-	data, addr = udpSock.recvfrom(1024) # buffer size is 1024 bytes
+	data, addr = udpSock.recvfrom(BUFFER_SIZE) # buffer size is 1024 bytes
 	udpIdentify(data,addr)
 	#udpSock.close() #remove
 	
 	tcpSock.listen(1)
 	conn, addr = tcpSock.accept()
-	data = conn.recv(1024)
+	data = conn.recv(BUFFER_SIZE)
 	#validate data
 	header ,b, dlen = struct.unpack('!2sbh',data[:5])
 	path = struct.unpack('!{0}s'.format(dlen),data[5:])[0]

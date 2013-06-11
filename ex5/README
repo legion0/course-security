@@ -12,7 +12,11 @@ README - This file.
 peek.py
 parseSID.py
 protocol.txt
-
+rotocol.txt
+cyanide.py
+mitm.py
+pic.jpg
+dissector.tar.gz 
 Answers to Exercise Questions
 -----------------------------
 
@@ -37,3 +41,9 @@ Part 3 - File Access Weakness:
 
 Remarks
 -------
+Lua Dissector (bonus 3):
+to install, extract eSquirrel.lua file to any folder
+add the line:
+dofile("<path to eSquirrel.lua>\\eSquirrel.lua")
+to the init.lua file in Wireshark instalation folder.
+enjoy.

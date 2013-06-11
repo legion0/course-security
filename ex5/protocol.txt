@@ -31,7 +31,7 @@ Content:
 	file_struct			*		The struct file_struct repeated n times.
 
 file_struct:
-	file_attributes		1		The file attributes of a file (http://msdn.microsoft.com/en-us/library/windows/desktop/gg258117(v=vs.85).aspx).
+	file_attributes		1		File or Dir, 0x00 for FILE, 0x01 for DIR
 	file_size			4		The size of the file in bytes.
 	file_name_length	2		(a) The length of the file name.
 	file_name			a		The file name.
